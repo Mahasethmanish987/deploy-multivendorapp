@@ -1,0 +1,239 @@
+{% extends 'myapp/base.html' %}
+{% load tz %}
+{% load static %}
+{% load custom_filters %}
+{% block body %}
+
+<div class="main-section">
+    {% include 'vendor/cover.html' %}
+    <div class="page-section account-header buyer-logged-in">
+        <div class="container">
+            <div class="row">
+                <!-- Left Sidebar -->
+                <div class="col-lg-3 col-md-3 col-sm-12">
+                    {% include 'vendor/v_sidebar.html' %}
+                </div>
+
+                <!-- Main Content -->
+                <div class="col-lg-9 col-md-9 col-sm-12">
+                    <div class="user-dashboard loader-holder">
+                        <div class="user-holder">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="mb-0">Your Orders</h4>
+                            </div>
+
+                            <!-- Orders Table Container -->
+                            <div class="order-table-container">
+                                <table id="ordersTable" class="table">
+                                    <thead>
+                                        <tr>
+                                            <th width="50">#</th>
+                                            <th width="250">food_title</th>
+                                            <th width="300">Price</th>
+                                            <th width="120">Qty</th>
+                                            <th width="120">Amount</th>
+                                            <th width="200">ordered_at</th>
+                                            <th width="200">completed_at</th>
+
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for payout in payouts.food_data %}
+                                        <tr>
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>
+
+                                                <div class="vendor-cell">
+                                                    {{payout.food_title}}
+                                                </div>
+
+                                            </td>
+                                            <td>₹{{ payout.price }}</td>
+                                            <td>{{ payout.quantity }}</td>
+                                            <td>₹{{ payout.amount }}</td>
+
+                                           <td>{{ payout.ordered_at}}</td>
+
+
+                                            <td>{{ payout.completed_at }}</td>
+
+
+                                        </tr>
+
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    /* Base Table Styles */
+    .order-table-container {
+        overflow-x: auto;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+        margin: 20px 0;
+    }
+
+    .table {
+        width: 100%;
+        min-width: 1200px;
+        border-collapse: collapse;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    .table th,
+    .table td {
+        padding: 14px 20px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f0f4f8;
+    }
+
+    /* Header */
+    .table th {
+        background: #3b82f6;
+        color: #ffffff;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        font-size: 0.9em;
+    }
+
+    /* Table Body */
+    .table tbody tr {
+        transition: background 0.15s ease;
+    }
+
+    .table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    /* Food Items Cell Fix */
+    .item-cell {
+        white-space: normal;
+        line-height: 1.6;
+        padding: 8px 0;
+        max-width: 280px;
+        display: block;
+    }
+
+    /* Status Badges */
+    .status-badge {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-transform: capitalize;
+        letter-spacing: 0.3px;
+    }
+
+    .status-completed {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .status-pending {
+        background: #ffedd5;
+        color: #9a3412;
+    }
+
+    .status-cancelled {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    /* Detail Button */
+    .detail-btn {
+        color: #64748b;
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        transition: all 0.2s;
+        background: #f1f5f9;
+    }
+
+    .detail-btn:hover {
+        background: #3b82f6;
+        color: white;
+        transform: scale(1.05);
+    }
+
+    /* Empty State */
+    .no-orders {
+        padding: 2rem;
+        background: #f8fafc;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    /* Zebra Striping */
+    .table tbody tr:nth-child(even) {
+        background: #f8fafc;
+    }
+
+    /* Text Colors */
+    td {
+        color: #1e293b;
+        font-weight: 500;
+    }
+
+    td .vendor-cell {
+        color: #3b82f6;
+        font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+
+        .table th,
+        .table td {
+            padding: 12px 16px;
+        }
+
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 6px 12px;
+        }
+    }
+</style>
+<script>
+    $(document).ready(function () {
+        $('#ordersTable').DataTable({
+            responsive: false,
+            autoWidth: false,
+            scrollX: true,
+            scrollCollapse: true,
+            searching:false,
+            info:false,
+            paging:false,
+           
+            ordering: true,
+            order: [[6, 'desc']],
+            language: {
+               
+                infoEmpty: "No Payout found",
+                infoFiltered: "(filtered from _MAX_ total entries)",
+                paginate: {
+                    previous: '<i class="fas fa-chevron-left"></i>',
+                    next: '<i class="fas fa-chevron-right"></i>'
+                },
+                emptyTable: "no payouts found"
+            },
+            columnDefs: [
+                { targets: [0, 6], orderable: false },
+                { targets: '_all', className: "text-nowrap" }
+            ]
+        });
+    });
+</script>
+
+{% endblock %}

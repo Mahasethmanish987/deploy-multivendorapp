@@ -1,0 +1,158 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Customer Refunds{% endblock %}
+
+{% block extrastyle %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+    .badge { padding: 0.4em 0.7em; border-radius: 0.4rem; font-size: 0.85rem; }
+    .card { box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,0.05); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Customer Refunds</h1>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>customer</th>
+                        <th>Amount</th>
+                        <th>Reason</th>
+                        <th>status</th>
+                        <th>Actions</th>
+                       
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for refund in pending_refunds %}
+                    <tr id="refund-{{ refund.id }}">
+                        <td>{{ forloop.counter}}</td>
+                        <td>{{ refund.customer.email }}</td>
+                        <td>Rs{{ refund.refund_amount }}</td>
+                        <td>{{ refund.reason|truncatechars:30 }}</td>
+                        <td class="status-cell">
+                            {% if refund.status == 'processed' %}
+                                <span class="badge bg-success">Processed</span>
+                            {% elif refund.status == 'pending' %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% else %}
+                                <span class="badge bg-danger">Failed</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary process-refund-btn" 
+                                    data-refund-id="{{ refund.id }}"
+                                    data-refund-amount="{{ refund.refund_amount }}">
+                                <i class="bi bi-gear"></i> Process
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">No Refund requests Found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden eSewa Payment Form -->
+<form action="https://rc-epay.esewa.com.np/api/epay/main/v2/form" method="POST" id="payment-form">
+    <input type="hidden" name="amount" id="amount">
+    <input type="hidden" name="tax_amount" value="0">
+    <input type="hidden" name="total_amount" id="total_amount">
+    <input type="hidden" name="transaction_uuid" id="transaction_uuid">
+    <input type="hidden" name="product_code" id="product_code">0
+    <input type="hidden" name="product_service_charge" value="0">
+    <input type="hidden" name="product_delivery_charge" value="0">
+    <input type="hidden" name="success_url" value="http://127.0.0.1:8000/admins1/success_handle_esewa/">
+    <input type="hidden" name="failure_url" value="http://127.0.0.1:8000/admins1/failed_handle_esewa/">
+    <input type="hidden" name="signed_field_names" value="total_amount,transaction_uuid,product_code">
+    <input type="hidden" name="signature" id="signature">
+    <button type="submit" class="btn btn-success" hidden id="pay-now-btn">Pay Now</button>
+</form>
+
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function () {
+    console.log("Document ready");
+
+    $('.process-refund-btn').click(function () {
+        console.log("Button clicked");
+        const button = $(this);
+        const refundId = button.data('refund-id');
+        const refundAmount = button.data('refund-amount');
+
+        console.log("Refund ID:", refundId);
+
+        // Save button info to restore later
+        sessionStorage.setItem('payment_started', 'true');
+        sessionStorage.setItem('refund_id_clicked', refundId);
+
+        $.ajax({
+            url: '{% url "admins:process_esewa" %}',
+            type: 'POST',
+            data: {
+                'refund_id': refundId,
+                'refund_amount': refundAmount,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            dataType: 'json',
+            beforeSend: function () {
+                button.prop('disabled', true);
+                button.html('<i class="bi bi-hourglass"></i> Processing...');
+            },
+            success: function (response) {
+                console.log("Success:", response);
+
+                $('#transaction_uuid').val(response.transaction_uuid);
+                $('#total_amount').val(response.amount);
+                $('#amount').val(response.amount);
+                $('#product_code').val(response.product_code);
+                $('#signature').val(response.signature);
+
+                document.getElementById('payment-form').submit();
+            },
+            error: function (xhr, status, error) {
+                console.log("Error:", status, error);
+                button.prop('disabled', false);
+                button.html('<i class="bi bi-cash"></i> Process');
+                sessionStorage.removeItem('payment_started');
+                sessionStorage.removeItem('refund_id_clicked');
+            }
+        });
+    });
+
+    // Restore only the previously clicked button if user comes back
+    window.addEventListener("pageshow", function () {
+        if (sessionStorage.getItem('payment_started') === 'true') {
+            const clickedId = sessionStorage.getItem('refund_id_clicked');
+            const button = $('.process-refund-btn[data-refund-id="' + clickedId + '"]');
+
+            if (button.length > 0) {
+                button.prop('disabled', false);
+                button.html('<i class="bi bi-cash"></i> Process');
+                console.log("Restored button state for refund_id:", clickedId);
+            }
+
+            sessionStorage.removeItem('payment_started');
+            sessionStorage.removeItem('refund_id_clicked');
+        }
+    });
+});
+</script>
+
+{% endblock %}

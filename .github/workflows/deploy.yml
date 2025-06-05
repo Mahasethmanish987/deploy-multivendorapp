@@ -1,0 +1,16 @@
+name:  Deploy To Production 
+
+
+on:
+  push:
+    branches: [main]
+
+job:
+  deploy:
+    runs-on:  ubuntu-latest
+
+
+    setps:
+     - name: Checkout code 
+       uses: actions/checkout@v3
+          

@@ -1,0 +1,156 @@
+{% extends 'myapp/base.html'%}
+{% load static %}
+{% block body %}
+
+<div class="main-section">
+    {% include 'customer/cover.html' %}
+    <div class="page-section account-header buyer-logged-in">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
+                    <!-- load the sidebar -->
+                    {% include 'customer/c_sidebar.html' %}
+                </div>
+                <div class="col-lg-9 col-md-9 col-sm-12 col-xs-12">
+                    <div class="user-dashboard loader-holder">
+                        <div class="user-holder">
+                            <h3 class="mb-4">My Orders</h3>
+                            {% if orders %}
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover">
+                                    <thead class="thead-dark">
+                                        <tr>
+                                            <th class="text-nowrap">Order ID</th>
+                                            <th>Product</th>
+                                            <th class="text-center">Qty</th>
+                                            <th class="text-end">Price</th>
+                                            <th class="text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for order in orders %}
+                                        <tr data-order-id="{{order.id}}">
+                                            <td class="text-nowrap">{{ order.id }}</td>
+                                            <td class="text-truncate" style="max-width: 200px;" title="{{ order.fooditem.food_title }}">
+                                                {{ order.fooditem.food_title }}
+                                            </td>
+                                            <td class="text-center">{{ order.quantity }}</td>
+                                            <td class="text-end">Rs{{ order.amount }}</td>
+                                            <td class="text-center">
+                                                <span class="badge rounded-pill order-status 
+                                                    {% if order.status == 'pending' %}text-bg-warning
+                                                    {% elif order.status == 'cancelled' %}text-bg-danger
+                                                    {% elif order.status == 'delivered' %}text-bg-success
+                                                    {% else %}text-bg-primary{% endif %}">
+                                                    {{ order.status|title }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">You have no orders yet.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Scoped styles that won't affect other pages */
+    .user-holder table {
+        width: 100%;
+        font-size: 0.9rem;
+    }
+    
+    .user-holder th {
+        padding: 12px 8px;
+        background-color: #f8f9fa;
+    }
+    
+    .user-holder td {
+        padding: 10px 8px;
+        vertical-align: middle;
+    }
+    
+    .user-holder .table-responsive {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    
+    .status-flash {
+        animation: statusFlash 1s ease-out;
+    }
+    
+    @keyframes statusFlash {
+        0% { background-color: rgba(255, 235, 59, 0.3); }
+        100% { background-color: transparent; }
+    }
+    
+    .text-truncate {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const orderSockets = {};
+    const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+
+    {% for order in orders %}
+    (function (orderId) {
+        const socket = new WebSocket(`${wsScheme}://foodonline.run.place/ws/order/${orderId}/`);
+        orderSockets[orderId] = socket;
+        
+        socket.onmessage = function (e) {
+            const data = JSON.parse(e.data);
+            const row = document.querySelector(`tr[data-order-id="${orderId}"]`);
+
+            if (row) {
+                const statusBadge = row.querySelector('.order-status');
+                const statusColor = getStatusColor(data.status);
+                statusBadge.className = `badge rounded-pill order-status ${statusColor}`;
+                statusBadge.textContent = data.status;
+
+                row.classList.add('status-flash');
+                setTimeout(() => row.classList.remove('status-flash'), 1000);
+            }
+        };
+
+        socket.onclose = function () {
+            delete orderSockets[orderId];
+        };
+
+        socket.onerror = function (error) {
+            console.error(`WebSocket Error for order ${orderId}:`, error);
+        };
+    })('{{ order.id }}');
+    {% endfor %}
+
+    window.addEventListener('beforeunload', () => {
+        Object.values(orderSockets).forEach(socket => socket.close());
+    });
+
+    function getStatusColor(status) {
+        const colors = {
+            'pending': 'text-bg-warning',
+            'accepted': 'text-bg-primary',
+            'preparing': 'text-bg-info',
+            'ready': 'text-bg-success',
+            'delivered': 'text-bg-success',
+            'cancelled': 'text-bg-danger'
+        };
+        return colors[status.toLowerCase()] || 'text-bg-secondary';
+    }
+});
+</script>
+
+{% endblock %}

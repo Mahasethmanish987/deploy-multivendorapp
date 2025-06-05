@@ -1,0 +1,4 @@
+{% autoescape off %}
+<h2>Final Warning: Order #{{ order.id }}</h2>
+<p>Complete {{ order.fooditem.food_title }} within {{time_remaining}}  to avoid cancellation.</p>
+{% endautoescape %}

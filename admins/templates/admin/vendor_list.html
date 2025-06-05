@@ -1,0 +1,153 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Vendor Payouts{% endblock %}
+
+{% block extrastyle %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+    .badge { padding: 0.4em 0.7em; border-radius: 0.4rem; font-size: 0.85rem; }
+    .card { box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,0.05); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Vendor Payouts</h1>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Vendor</th>
+                        <th>Total</th>
+                        <th>Commission</th>
+                        <th>Net Amount</th>
+                        <th>Status</th>
+                        <th>Payout Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payout in payouts %}
+                    <tr id="payout-{{ payout.id }}">
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ payout.vendor.vendor_name }}</td>
+                        <td>Rs {{ payout.total_amount }}</td>
+                        <td>{{ payout.commission|floatformat:2 }}</td>
+                        <td>Rs {{ payout.net_amount }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if payout.status == 'completed' %} bg-success
+                                {% elif payout.status == 'cancelled' %} bg-danger
+                                {% else %} bg-warning text-dark {% endif %}">
+                                {{ payout.status|title }}
+                            </span>
+                        </td>
+                        <td>{{ payout.payout_date }}</td>
+                        <td>
+                            {% if payout.status == "pending" or payout.status == 'cancelled' %}
+                            <button class="btn btn-sm btn-outline-primary process-payout-btn"
+                                    data-payout-id="{{ payout.id }}"
+                                    data-payout-amount="{{ payout.net_amount }}">
+                                <i class="bi bi-cash"></i> Process
+                            </button>
+                            {% else %}
+                            <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center">No payout refunds available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden eSewa Payment Form -->
+<form action="https://rc-epay.esewa.com.np/api/epay/main/v2/form" method="POST" id="payment-form">
+    <input type="hidden" name="amount" id="amount">
+    <input type="hidden" name="tax_amount" value="0">
+    <input type="hidden" name="total_amount" id="total_amount">
+    <input type="hidden" name="transaction_uuid" id="transaction_uuid">
+    <input type="hidden" name="product_code" id="product_code">0
+    <input type="hidden" name="product_service_charge" value="0">
+    <input type="hidden" name="product_delivery_charge" value="0">
+    <input type="hidden" name="success_url" value="http://127.0.0.1:8000/admins1/vendor_success_handle_esewa/">
+    <input type="hidden" name="failure_url" value="http://127.0.0.1:8000/admins1/vendor_failure_handle_esewa/">
+    <input type="hidden" name="signed_field_names" value="total_amount,transaction_uuid,product_code">
+    <input type="hidden" name="signature" id="signature">
+    <button type="submit" class="btn btn-success" hidden id="pay-now-btn">Pay Now</button>
+</form>
+
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(function () {
+    $('.process-payout-btn').on('click', function () {
+        const button = $(this);
+        const payoutId = button.data('payout-id');
+        const payoutAmount = button.data('payout-amount');
+
+        sessionStorage.setItem('payment_started', 'true');
+        sessionStorage.setItem('payout_id_clicked', payoutId);
+
+        $.ajax({
+            url: '{% url "admins:vendor_process_esewa" %}',
+            type: 'POST',
+            data: {
+                'payout_id': payoutId,
+                'payout_amount': payoutAmount,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            dataType: 'json',
+            beforeSend: function () {
+                button.prop('disabled', true);
+                button.html('<i class="bi bi-hourglass-split"></i> Processing...');
+            },
+            success: function (response) {
+                $('#transaction_uuid').val(response.transaction_uuid);
+                $('#total_amount').val(response.amount);
+                $('#amount').val(response.amount);
+                $('#product_code').val(response.product_code);
+                $('#signature').val(response.signature);
+
+                $('#payment-form').submit();
+            },
+            error: function (xhr, status, error) {
+                console.error("Error:", status, error);
+                button.prop('disabled', false);
+                button.html('<i class="bi bi-cash"></i> Process');
+                sessionStorage.removeItem('payment_started');
+                sessionStorage.removeItem('payout_id_clicked');
+            }
+        });
+    });
+
+    // Restore button state if coming back from eSewa redirect
+    window.addEventListener("pageshow", function () {
+        if (sessionStorage.getItem('payment_started') === 'true') {
+            const payoutId = sessionStorage.getItem('payout_id_clicked');
+            const button = $('.process-payout-btn[data-payout-id="' + payoutId + '"]');
+            if (button.length) {
+                button.prop('disabled', false);
+                button.html('<i class="bi bi-cash"></i> Process');
+                console.log("Restored button for payout_id:", payoutId);
+            }
+            sessionStorage.removeItem('payment_started');
+            sessionStorage.removeItem('payout_id_clicked');
+        }
+    });
+});
+</script>
+{% endblock %}

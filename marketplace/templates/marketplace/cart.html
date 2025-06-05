@@ -1,0 +1,342 @@
+{% extends 'myapp/base.html' %}
+{% block body %}
+<div class="main-section">
+    <div class="page-section">
+        <div class="container">
+            <div class="row">
+                <!-- Cart Items -->
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body">
+                            <h4 class="card-title mb-4">
+                                <i class="fa fa-shopping-cart text-danger"></i> Your Cart
+                            </h4>
+
+                            <div class="text-center py-5" id="empty-cart" style="display:none;">
+                                <i class="fa fa-shopping-cart fa-3x text-muted mb-3"></i>
+                                <h3 class="text-muted">Your cart is empty</h3>
+                            </div>
+                            <input type="hidden" id="cart-status"
+                                value="{% if cart_items %}not_empty{% else %}empty{% endif %}">
+
+                            <div id="cart-items-list">
+                                {% if cart_items %}
+                                {% for cart_item in cart_items %}
+                                <div class="cart-item card mb-3 border-0" id="cart-item-{{cart_item.id}}">
+                                    <div class="row g-0 align-items-center">
+                                        <!-- Image -->
+                                        <div class="col-3">
+                                            <div class="image-container">
+                                                <img src="{{cart_item.fooditem.image.url}}"
+                                                    alt="{{cart_item.fooditem}}">
+                                            </div>
+                                        </div>
+
+                                        <!-- Details -->
+                                        <div class="col-6">
+                                            <div class="p-3">
+                                                <h5 class="mb-1">{{cart_item.fooditem}}</h5>
+                                                <p class="text-muted small mb-2">
+                                                    {{cart_item.fooditem.description|truncatechars:40}}</p>
+                                                <a href="{% url 'marketplace:vendor_detail' cart_item.fooditem.vendor.vendor_slug %}"
+                                                    class="badge bg-warning text-dark">
+                                                    {{cart_item.fooditem.vendor}}
+                                                </a>
+                                            </div>
+                                        </div>
+
+                                        <!-- Controls -->
+                                        <div class="col-3">
+                                            <div class="d-flex flex-column align-items-end pe-2">
+                                                <span class="text-danger h6 mb-2">Rs{{cart_item.fooditem.price}}</span>
+
+                                                <div class="d-flex align-items-center mb-1">
+                                                    <button class="btn btn-sm btn-outline-danger decrease_cart"
+                                                        data-id="{{cart_item.fooditem.id}}" id="{{cart_item.id}}"
+                                                        data-url="{% url 'marketplace:decrease_cart' cart_item.fooditem.food_slug%}">
+                                                        <i class="fa fa-minus fa-xs"></i>
+                                                    </button>
+                                                    <span class="mx-2 fw-bold"
+                                                        id="qty-{{cart_item.fooditem.id}}">{{cart_item.quantity}}</span>
+                                                    <button class="btn btn-sm btn-outline-danger increase_cart"
+                                                        data-id="{{cart_item.fooditem.id}}"
+                                                        data-url="{% url 'marketplace:increase_cart' cart_item.fooditem.food_slug%}">
+                                                        <i class="fa fa-plus fa-xs"></i>
+                                                    </button>
+                                                </div>
+
+                                                <button width="20px" class="delete_cart btn btn-sm text-danger"
+                                                    data-id="{{cart_item.id}}"
+                                                    data-url="{% url 'marketplace:delete_cart' cart_item.id%}">
+                                                    <i class="fa fa-trash"></i> Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                  {% else %}
+                                  <div class="text-center py-5" id="empty-cart" style="display:block;">
+                                <i class="fa fa-shopping-cart fa-3x text-muted mb-3"></i>
+                                <h3 class="text-muted">Your cart is empty</h3>
+                            </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Summary -->
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+                        <div class="card-body">
+                            <h4 class="card-title mb-4">
+                                <i class="fa fa-receipt text-primary"></i> Order Summary
+                            </h4>
+
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    Subtotal
+                                    <span class="text-danger">
+                                        <span>Rs</span>
+                                        <span id="subtotal">{{cart_amount}}</span>
+                                    </span>
+                                </div>
+
+                                <div
+                                    class="list-group-item d-flex justify-content-between align-items-center font-weight-bold">
+                                    Total
+                                    <span class="text-danger">
+                                        <span>Rs</span>
+                                        <span id="total">{{cart_amount}}</span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <button onclick="checkVendorStatusBeforeCheckout()" class="btn btn-danger w-100 mt-4 py-2">
+                                Proceed to Checkout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Core Cart Item Styles */
+    .cart-item.card {
+        height: auto;
+        overflow: hidden;
+    }
+
+    .cart-item .row {
+        height: 100%;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* Image Section */
+    .cart-item .image-container {
+        width: 100px;
+        height: 100px;
+        min-width: 80px;
+        border-radius: 8px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .cart-item .image-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* Details Section */
+    .cart-item .details-section {
+        padding-left: 1rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+    .cart-item h5 {
+        font-size: 1rem;
+        margin-bottom: 0.3rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cart-item .text-muted.small {
+        font-size: 0.8rem;
+        line-height: 1.2;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Controls Section */
+    .cart-item .controls-section {
+        padding-right: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.3rem;
+    }
+
+    /* Quantity Controls */
+    .cart-item .quantity-controls {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .cart-item .quantity-controls .btn {
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .cart-item .quantity-controls span {
+        min-width: 26px;
+        text-align: center;
+        font-size: 0.9rem;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+        .cart-item .row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .cart-item .col-3,
+        .cart-item .col-6 {
+            width: 100% !important;
+            max-width: 100%;
+        }
+
+        .cart-item .image-container {
+            width: 90px;
+            height: 90px;
+        }
+
+        .cart-item h5 {
+            font-size: 1rem;
+        }
+
+        .cart-item .controls-section {
+            width: 100%;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
+    }
+    
+
+    @media (max-width: 576px) {
+        .cart-item .image-container {
+            width: 80px;
+            height: 80px;
+        }
+
+        .cart-item h5 {
+            font-size: 0.95rem;
+        }
+
+        .cart-item .quantity-controls .btn {
+            width: 24px;
+            height: 24px;
+            font-size: 0.75rem;
+        }
+
+        .cart-item .quantity-controls span {
+            min-width: 24px;
+            font-size: 0.85rem;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .cart-item .image-container {
+            width: 70px;
+            height: 70px;
+        }
+
+        .cart-item h5 {
+            font-size: 0.9rem;
+        }
+
+        .cart-item .text-muted.small {
+            font-size: 0.75rem;
+            -webkit-line-clamp: 1;
+        }
+
+        .cart-item .quantity-controls .btn {
+            width: 20px;
+            height: 20px;
+            font-size: 0.7rem;
+        }
+
+        .cart-item .quantity-controls span {
+            min-width: 20px;
+            font-size: 0.75rem;
+        }
+    }
+</style>
+
+<script>
+function checkVendorStatusBeforeCheckout() {
+  const cartStatus = document.getElementById("cart-status").value;
+
+    if (cartStatus === "empty") {
+          alert("🛒 Your cart is empty. Please add some items before proceeding to checkout.");
+        return;
+    }
+    console.log('hlw world')
+    event.preventDefault()
+    fetch("/marketplace/check-vendor-status/", {
+        method: "GET",
+        headers: {
+            "X-Requested-With": "XMLHttpRequest"
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data)
+        const closed = data.closed_vendors;
+        const opened = data.opened_vendors;
+
+        // No vendors are open at all
+        if (opened.length === 0) {
+            alert("❌ All vendors in your cart are currently closed. Please try again later.");
+            return;
+        }
+
+        // Some vendors are closed, but some are open
+        if (closed.length > 0) {
+            const names = closed.join(', ');
+            if (confirm(`⚠️ The following vendor(s) are currently closed: ${names}\n\nDo you still want to proceed with checkout?`)) {
+                window.location.href = "/marketplace/checkout/";
+            }
+        } else {
+            // All vendors are open
+            window.location.href = "/marketplace/checkout/";
+        }
+    });
+}
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,193 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice - {{ order.order_number }}</title>
+    <style>
+        /* Simplified PDF-safe CSS */
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            margin: 0;
+            padding: 1cm;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 1cm;
+            border-bottom: 1pt solid #ddd;
+            padding-bottom: 0.5cm;
+        }
+
+        .logo {
+            max-width: 200pt;
+            height: auto;
+            margin: 0 auto 10pt;
+        }
+
+        .info-table {
+            width: 100%;
+            margin: 15pt 0;
+            border-collapse: collapse;
+        }
+
+        .info-table td {
+            padding: 5pt;
+            vertical-align: top;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15pt 0;
+        }
+
+        .items-table th,
+        .items-table td {
+            border: 0.75pt solid #ddd;
+            padding: 8pt;
+            vertical-align: top;
+        }
+
+        .total-section {
+            margin-top: 20pt;
+            padding: 10pt;
+            background-color: #f8f8f8;
+            border-radius: 3pt;
+        }
+
+        .footer {
+            margin-top: 30pt;
+            padding-top: 10pt;
+            border-top: 1pt solid #ddd;
+            font-size: 8pt;
+            color: #666;
+        }
+        .header {
+    page-break-after: avoid; /* Keep header together in PDF */
+}
+
+.header img {
+    max-height: 80pt;
+    margin-bottom: 5pt !important;
+}
+
+.header h2 {
+    margin: 5pt 0 !important;
+    padding: 0 !important;
+    line-height: 1.2;
+}
+
+.header p {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 10pt;
+}
+    </style>
+</head>
+<body>
+    <!-- Header Section -->
+    <div class="header">
+        <img src="{{ base_url }}{% static 'logo/foodOnlineLogo.png' %}" class="logo" height="80px">
+        <h2>Order Invoice</h2>
+        <p>{{ order.created_at|date:"F j, Y" }}</p>
+    </div>
+
+    <!-- Order Information -->
+    <table class="info-table">
+        <tr>
+            <td style="width: 50%;">
+                <h3>Bill To:</h3>
+                <p>
+                    {{ order.first_name }}<br>
+                    {{ order.address }}<br>
+                    {{ order.phone }}<br>
+                    {{ order.email }}
+                </p>
+            </td>
+            <td style="width: 50%;">
+                <h3>Order Details:</h3>
+                <p>
+                    Order Number: {{ order.order_number }}<br>
+                    Payment Method: {{ order.payment_method }}<br>
+                    Transaction ID: {{ order.payment.transaction_id }}
+                </p>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Order Items -->
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="width: 15%;">Image</th>
+                <th style="width: 50%;">Item</th>
+                <th style="width: 15%;">Qty</th>
+                <th style="width: 20%;">Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in ordered_food %}
+            <tr>
+                <td class="text-center">
+                    <img src="{{ base_url }}{{ item.fooditem.image.url }}" 
+                         style="max-width: 80pt; height: 100px;">
+                </td>
+                <td>
+                    <strong>{{ item.fooditem }}</strong><br>
+                    <em>Vendor: {{ item.fooditem.vendor.vendor_name }}</em>
+                </td>
+                <td class="text-center">{{ item.quantity }}</td>
+                <td class="text-right">Rs{{ item.fooditem.price }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Totals -->
+    <div class="total-section">
+        <table style="width: 100%;">
+            <tr>
+                <td style="width: 70%;"></td>
+                <td style="width: 30%;">
+                    <table style="width: 100%;">
+                        <tr>
+                            <td>Subtotal:</td>
+                            <td class="text-right">
+                                Rs{{ subtotal }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total:</strong></td>
+                            <td class="text-right"><strong>Rs{{subtotal }}</strong></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <table style="width: 100%;">
+            <tr>
+                <td style="width: 50%;">
+                    <strong>FoodOnline</strong><br>
+                    Thank you for your business!
+                </td>
+                <td style="width: 50%; text-align: right;">
+                    <strong>Contact Support</strong><br>
+                    Phone: 9817680523<br>
+                    Email: support@foodonline.com
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>
