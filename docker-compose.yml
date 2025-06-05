@@ -50,7 +50,7 @@ services:
 
   celery_worker:
     build: .
-    command: celery -A mysite worker --loglevel=info --concurrency=4
+    command: celery -A mysite worker --loglevel=info --concurrency=2
     volumes:
       - .:/app
     env_file:
