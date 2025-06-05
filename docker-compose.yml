@@ -1,4 +1,4 @@
-version: '3.8'
+
 
 services:
   web:
@@ -104,14 +104,11 @@ services:
     volumes:
       - static_volume:/app/static
       - media_volume:/app/media
-      - certbot_data:/etc/letsencrypt
-      - certbot_webroot:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
     depends_on:
       - web
-    command: >
-      sh -c "certbot certonly --standalone --non-interactive --agree-tos --email mahasethmanish63@gmail.com -d foodonline.run.place
-         && echo '0 0 * * * certbot renew --quiet --post-hook \"nginx -s reload\"' | crontab -
-         && nginx -g 'daemon off;'"
+    
 
 volumes:
   postgres_data:
@@ -119,5 +116,4 @@ volumes:
   beat_data:
   static_volume:
   media_volume:
-  certbot_data:
-  certbot_webroot:
+  

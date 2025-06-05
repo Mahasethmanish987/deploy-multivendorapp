@@ -1,13 +1,15 @@
-
 #!/bin/sh
 set -e
 
-# Create necessary directories (if they don't exist)
+# Create necessary directories
 mkdir -p /var/www/certbot
 mkdir -p /var/log/letsencrypt
 
 # Run certbot if certificate doesn't exist
 if [ ! -f /etc/letsencrypt/live/foodonline.run.place/fullchain.pem ]; then
+  echo "Stopping Nginx for initial certificate setup..."
+  nginx -s stop || true
+  
   echo "Obtaining SSL certificate..."
   certbot certonly --standalone \
     --non-interactive \
@@ -20,10 +22,9 @@ else
   echo "Certificate already exists. Skipping initial setup."
 fi
 
-# Setup cron job (Alpine-specific)
-echo "Setting up daily certificate renewal..."
-echo '0 0 * * * certbot renew --quiet --post-hook "nginx -s reload"' > /etc/>
-# Set proper permissions for cron
+# Setup cron job with PATH
+echo "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" > /etc/crontabs/root
+echo "0 0 * * * certbot renew --webroot -w /var/www/certbot --quiet --post-hook 'nginx -s reload'" >> /etc/crontabs/root
 chmod 0644 /etc/crontabs/root
 
 # Start cron daemon in background
