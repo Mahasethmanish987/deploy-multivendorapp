@@ -28,12 +28,18 @@ jobs:
            #Navigate to the project directory
            cd /home/ubuntu/foodonline
            if [ ! -d .git ]; then
-             git clone https://github.com/Mahasethmanish987/deploy-multivendorapp.git
-           fi  
+              if [ -z "$(ls -A)" ]; then
+                git clone https://github.com/Mahasethmanish987/deploy-multivendorapp.git .
+              else
+                  git remote add origin https://github.com/Mahasethmanish987/deploy-multivendorapp.git
+                  git fetch
+                  git checkout -t origin/master -f
+              fi
+            fi      
            cd /home/ubuntu/foodonline
            git pull origin master
            
-           docker comose up -d --build
+           docker compose up -d --build
            docker ps -a 
            docker compose logs 
 
