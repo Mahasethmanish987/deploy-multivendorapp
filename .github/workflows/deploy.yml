@@ -33,11 +33,15 @@ jobs:
               else
                   git remote add origin https://github.com/Mahasethmanish987/deploy-multivendorapp.git
                   git fetch
-                  git checkout -t origin/master -f
+                  git checkout master -f 
               fi
             fi      
-           cd /home/ubuntu/foodonline
+           git reset --hard origin/master
            git pull origin master
+           if [ ! -f docker-compose.yml ]; then
+              echo "ERROR: docker-compose.yml is missing!"
+              exit 1
+           fi
            
            docker compose up -d --build
            docker ps -a 
