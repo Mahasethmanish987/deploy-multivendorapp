@@ -37,14 +37,14 @@ def getVendor(request):
 
 
 def checkVendor(user):
-    if user.role == 1 or user.is_superuser:
+    if user.role == 1 :
         return True
     else:
         raise PermissionDenied
 
 
 def checkCustomer(user):
-    if user.role == 2:
+    if user.role == 2 or user.is_superuser:
         return True
     else:
         raise PermissionDenied
