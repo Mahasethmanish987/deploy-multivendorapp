@@ -18,11 +18,7 @@ services:
       - DJANGO_DEBUG=False
       - GDAL_DATA=/usr/share/gdal
       - DJANGO_SETTINGS_MODULE=mysite.settings
-      - POSTGRES_HOST=inventory_db
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=foodonline2
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=MANISH@123
+      
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     command: >
