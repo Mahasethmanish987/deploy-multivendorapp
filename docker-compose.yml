@@ -4,7 +4,7 @@ services:
   web:
     build: .
     depends_on:
-      - inventory_db
+      
       - redis
     volumes:
       - .:/app
@@ -19,8 +19,7 @@ services:
       - GDAL_DATA=/usr/share/gdal
       - DJANGO_SETTINGS_MODULE=mysite.settings
       
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      
     command: >
       sh -c "python manage.py wait_for_db &&
              python manage.py migrate &&
@@ -47,16 +46,11 @@ services:
       - DJANGO_DEBUG=False  # Should be False in production
       - GDAL_DATA=/usr/share/gdal
       - DJANGO_SETTINGS_MODULE=mysite.settings
-      - POSTGRES_HOST=inventory_db
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=foodonline2
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=MANISH@123
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      
     depends_on:
       - redis
-      - inventory_db
+      - web 
+      
     restart: unless-stopped
 
   celery_beat:
@@ -71,17 +65,11 @@ services:
       - DJANGO_DEBUG=False  # Should be False in production
       - GDAL_DATA=/usr/share/gdal
       - DJANGO_SETTINGS_MODULE=mysite.settings
-      - POSTGRES_HOST=inventory_db
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=foodonline2
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=MANISH@123
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      
       - CELERY_BEAT_SCHEDULE_FILENAME=/var/celery/beat-schedule
     depends_on:
       - redis
-      - inventory_db
+     
     restart: unless-stopped
 
   nginx:
@@ -90,8 +78,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - static_volume:/app/static
-      - media_volume:/app/media
+     
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
     depends_on:
@@ -102,6 +89,5 @@ volumes:
   postgres_data:
   redis_data:
   beat_data:
-  static_volume:
-  media_volume:
+  
   
