@@ -13,6 +13,7 @@ RUN apt-get update && \
     libgdal-dev \
     libgeos-dev \
     gettext \
+    awscli \
     && rm -rf /var/lib/apt/lists/*
 
 # Create symlinks for both GDAL and GEOS
