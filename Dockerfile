@@ -6,7 +6,7 @@ ENV PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
     GDAL_VERSION=3.4.3 \
     GEOS_VERSION=3.11.2 \
-    PROJ_VERSION=9.3.1  # Updated to newer version
+    PROJ_VERSION=9.3.1
 
 # Install system dependencies
 RUN apt-get update && \
@@ -22,24 +22,21 @@ RUN apt-get update && \
     libxml2-dev \
     libgeos++-dev \
     gettext \
-    # Additional dependencies
     python3-dev \
     python3-pip \
     python3-setuptools \
     swig \
-    # PROJ required dependencies
     libsqlite3-0 \
     sqlite3 \
     libtiff5 \
     libcurl4 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PROJ from source with fixes
+# Install PROJ from source
 RUN wget https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz \
     && tar -xzf proj-${PROJ_VERSION}.tar.gz \
     && cd proj-${PROJ_VERSION} \
     && mkdir build && cd build \
-    # Fix: Disable tests and network access during build
     && cmake .. \
         -DCMAKE_BUILD_TYPE=Release \
         -DBUILD_TESTING=OFF \
@@ -66,12 +63,10 @@ RUN wget https://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2 \
 RUN wget https://github.com/OSGeo/gdal/releases/download/v${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz \
     && tar -xzf gdal-${GDAL_VERSION}.tar.gz \
     && cd gdal-${GDAL_VERSION} \
-    # Configure without Python bindings
     && ./configure \
         --with-geos=yes \
         --with-proj=/usr/local \
         --without-python \
-        # Disable unnecessary components
         --without-curl \
         --without-xml2 \
     && make -j$(nproc) \
