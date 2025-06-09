@@ -22,7 +22,7 @@ RUN apt-get update && \
     libxml2-dev \
     libgeos++-dev \
     gettext \
-    postgresql-client-13 \
+    
     && rm -rf /var/lib/apt/lists/*
 
 # Install PROJ from source
