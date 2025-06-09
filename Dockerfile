@@ -30,9 +30,7 @@ RUN apt-get update && \
     sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
-# ... rest of the Dockerfile remains the same ...
-
-# Install PROJ from source
+# Install PROJ from source (fixed)
 RUN wget https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz \
     && tar -xzf proj-${PROJ_VERSION}.tar.gz \
     && cd proj-${PROJ_VERSION} \
@@ -43,6 +41,7 @@ RUN wget https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz \
         -DBUILD_PYTHON_BINDINGS=OFF \
         -DENABLE_CURL=OFF \
         -DRUN_NETWORK_DEPENDENT_TESTS=OFF \
+        -DBUILD_PROJSYNC=OFF \   # Critical fix
     && make -j$(nproc) \
     && make install \
     && cd ../.. \
