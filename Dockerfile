@@ -11,10 +11,10 @@ RUN apt-get update && \
     binutils \
     gdal-bin \
     libgdal-dev \
-    python3-gdal \  # Critical - installs pre-built Python bindings
+    python3-gdal \
     libgeos-dev \
-    gettext \
-    && rm -rf /var/lib/apt/lists/*
+    gettext && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set GDAL environment variables
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal \
@@ -28,7 +28,7 @@ WORKDIR /app
 # Upgrade pip
 RUN pip install --upgrade pip
 
-# Remove gdal from requirements before installing
+# Copy and install requirements
 COPY requirements.txt .
 RUN sed -i '/^gdal==/d' requirements.txt && \
     pip install -r requirements.txt
