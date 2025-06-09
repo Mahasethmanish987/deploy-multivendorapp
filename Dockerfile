@@ -11,31 +11,16 @@ RUN apt-get update && \
     binutils \
     gdal-bin \
     libgdal-dev \
+    python3-gdal \  # Critical - installs pre-built Python bindings
     libgeos-dev \
     gettext \
     && rm -rf /var/lib/apt/lists/*
 
-# Create symlinks for both GDAL and GEOS
-RUN for lib in gdal geos_c; do \
-        LIB_PATH=$(find /usr -name "lib${lib}.so*" | head -1); \
-        echo "Found $lib library at: $LIB_PATH"; \
-        ln -sf $LIB_PATH /usr/lib/lib${lib}.so; \
-        echo "Created symlink: /usr/lib/lib${lib}.so → $LIB_PATH"; \
-    done
-
-# Verify libraries exist
-RUN ls -l /usr/lib/libgdal.so /usr/lib/libgeos_c.so && \
-    ldconfig -p | grep -E 'gdal|geos'
-
-# Set environment variables
+# Set GDAL environment variables
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal \
     C_INCLUDE_PATH=/usr/include/gdal \
     GDAL_LIBRARY_PATH=/usr/lib/libgdal.so \
-    GEOS_LIBRARY_PATH=/usr/lib/libgeos_c.so \
-    LD_LIBRARY_PATH=/usr/lib:/usr/lib/x86_64-linux-gnu
-
-# Update linker cache
-RUN ldconfig
+    GEOS_LIBRARY_PATH=/usr/lib/libgeos_c.so
 
 # Install Python dependencies
 WORKDIR /app
@@ -43,9 +28,13 @@ WORKDIR /app
 # Upgrade pip
 RUN pip install --upgrade pip
 
-# Install requirements
+# Remove gdal from requirements before installing
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN sed -i '/^gdal==/d' requirements.txt && \
+    pip install -r requirements.txt
+
+# Install GDAL bindings from system package
+RUN pip install --no-deps pygdal==3.6.2.*
 
 # Copy application code
 COPY . .
