@@ -1,47 +1,28 @@
-FROM python:3.10-bookworm
+# Use lightweight Python base with geospatial support
+FROM python:3.11-slim-bullseye
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    DEBIAN_FRONTEND=noninteractive
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gdal-bin \
-    libgdal-dev \
-    libproj-dev \
-    libgeos-dev \
-    python3-gdal \
-    build-essential \
-    wget \
-    unzip \
-    gettext \
-    python3-dev \
-    python3-pip \
-    python3-setuptools \
+# Install geospatial dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libgdal-dev=3.2.2+dfsg-1+deb11u1 \
+    gdal-bin=3.2.2+dfsg-1+deb11u1 \
+    proj-bin=7.2.1-1 \
+    proj-data=7.2.1-1 \
+    binutils=2.36.1-7 \
+    libproj-dev=7.2.1-1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Configure GDAL and PROJ environment variables
-ENV CPLUS_INCLUDE_PATH=/usr/include/gdal \
-    C_INCLUDE_PATH=/usr/include/gdal \
-    PROJ_LIB=/usr/share/proj \
-    LD_LIBRARY_PATH=/usr/lib:$LD_LIBRARY_PATH
+# Set required environment variables
+ENV PROJ_LIB=/usr/share/proj \
+    GDAL_LIBRARY_PATH=/usr/lib
 
-# Set working directory
+# Install Python dependencies
 WORKDIR /app
-
-# Upgrade pip
-RUN pip install --upgrade pip setuptools wheel
-
-# Install Python requirements
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Python GDAL bindings (matched with installed version)
-RUN pip install --no-cache-dir "gdal==$(gdal-config --version).*"
-
-# Copy project code
+# Copy application code
 COPY . .
 
-# Run server
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Run migrations and application
+CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
