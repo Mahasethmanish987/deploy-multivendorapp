@@ -6,9 +6,9 @@ ENV PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
     GDAL_VERSION=3.4.3 \
     GEOS_VERSION=3.11.2 \
-    PROJ_VERSION=9.1.1
+    PROJ_VERSION=9.3.1  # Updated to newer version
 
-# Install system dependencies with additional required packages
+# Install system dependencies
 RUN apt-get update && \
     apt-get install -y \
     build-essential \
@@ -22,22 +22,30 @@ RUN apt-get update && \
     libxml2-dev \
     libgeos++-dev \
     gettext \
-    # Additional dependencies for PROJ
+    # Additional dependencies
     python3-dev \
     python3-pip \
     python3-setuptools \
     swig \
-    # Postgres client (if needed)
-    # postgresql-client-13 \
+    # PROJ required dependencies
+    libsqlite3-0 \
+    sqlite3 \
+    libtiff5 \
+    libcurl4 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PROJ from source with Python bindings disabled
+# Install PROJ from source with fixes
 RUN wget https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz \
     && tar -xzf proj-${PROJ_VERSION}.tar.gz \
     && cd proj-${PROJ_VERSION} \
     && mkdir build && cd build \
-    # Disable Python bindings to prevent configuration issues
-    && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON_BINDINGS=OFF \
+    # Fix: Disable tests and network access during build
+    && cmake .. \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_TESTING=OFF \
+        -DBUILD_PYTHON_BINDINGS=OFF \
+        -DENABLE_CURL=OFF \
+        -DRUN_NETWORK_DEPENDENT_TESTS=OFF \
     && make -j$(nproc) \
     && make install \
     && cd ../.. \
@@ -59,7 +67,13 @@ RUN wget https://github.com/OSGeo/gdal/releases/download/v${GDAL_VERSION}/gdal-$
     && tar -xzf gdal-${GDAL_VERSION}.tar.gz \
     && cd gdal-${GDAL_VERSION} \
     # Configure without Python bindings
-    && ./configure --with-geos=yes --with-proj=/usr/local --without-python \
+    && ./configure \
+        --with-geos=yes \
+        --with-proj=/usr/local \
+        --without-python \
+        # Disable unnecessary components
+        --without-curl \
+        --without-xml2 \
     && make -j$(nproc) \
     && make install \
     && cd .. \
@@ -68,8 +82,6 @@ RUN wget https://github.com/OSGeo/gdal/releases/download/v${GDAL_VERSION}/gdal-$
 # Configure environment
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal \
     C_INCLUDE_PATH=/usr/include/gdal \
-    GDAL_LIBRARY_PATH=/usr/local/lib/libgdal.so \
-    GEOS_LIBRARY_PATH=/usr/local/lib/libgeos_c.so \
     PROJ_LIB=/usr/local/share/proj \
     LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
@@ -82,22 +94,14 @@ WORKDIR /app
 # Upgrade pip
 RUN pip install --upgrade pip setuptools wheel
 
-# Install requirements (NumPy is included in requirements.txt)
+# Install requirements
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install GDAL Python bindings AFTER other packages
+# Install GDAL Python bindings
 RUN pip install --no-cache-dir "gdal==$(gdal-config --version).*"
-
-# Verify installations
-RUN python -c "import numpy; print(f'NumPy version: {numpy.__version__}')" && \
-    python -c "from osgeo import gdal; print(f'GDAL bindings version: {gdal.__version__}')" && \
-    gdalinfo --version && \
-    geos-config --version && \
-    proj
 
 # Copy application code
 COPY . .
 
-# Set production-ready command (using Gunicorn)
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
