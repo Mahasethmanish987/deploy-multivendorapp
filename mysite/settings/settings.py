@@ -157,7 +157,7 @@ USE_I18N = True
 USE_TZ = True
 
 
-
+print('')
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_HOST_USER = "mahasethmanish63@gmail.com"
