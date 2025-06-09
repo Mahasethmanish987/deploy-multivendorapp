@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED=1 \
     GEOS_VERSION=3.11.2 \
     PROJ_VERSION=9.3.1
 
-# Install system dependencies
+# Install system dependencies - FIXED PACKAGES
 RUN apt-get update && \
     apt-get install -y \
     build-essential \
@@ -30,7 +30,7 @@ RUN apt-get update && \
     sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PROJ from source with Curl enabled
+# Install PROJ from source (fixed)
 RUN wget https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz \
     && tar -xzf proj-${PROJ_VERSION}.tar.gz \
     && cd proj-${PROJ_VERSION} \
@@ -39,7 +39,9 @@ RUN wget https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz \
         -DCMAKE_BUILD_TYPE=Release \
         -DBUILD_TESTING=OFF \
         -DBUILD_PYTHON_BINDINGS=OFF \
+        -DENABLE_CURL=OFF \
         -DRUN_NETWORK_DEPENDENT_TESTS=OFF \
+        -DBUILD_PROJSYNC=OFF \
     && make -j$(nproc) \
     && make install \
     && cd ../.. \
@@ -56,7 +58,7 @@ RUN wget https://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2 \
     && cd ../.. \
     && rm -rf geos-${GEOS_VERSION}*
 
-# Install GDAL from source
+# Install GDAL from source (FIXED SECTION)
 RUN wget https://github.com/OSGeo/gdal/releases/download/v${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz \
     && tar -xzf gdal-${GDAL_VERSION}.tar.gz \
     && cd gdal-${GDAL_VERSION} \
@@ -64,10 +66,11 @@ RUN wget https://github.com/OSGeo/gdal/releases/download/v${GDAL_VERSION}/gdal-$
         --with-geos=yes \
         --with-proj=/usr/local \
         --without-python \
+        --without-curl \
         --without-xml2 \
     && make -j$(nproc) \
     && make install \
-    && cd .. \
+    && cd ../.. \
     && rm -rf gdal-${GDAL_VERSION}*
 
 # Configure environment
@@ -95,5 +98,4 @@ RUN pip install --no-cache-dir "gdal==$(gdal-config --version).*"
 # Copy application code
 COPY . .
 
-# Run the app
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
