@@ -1,0 +1,48 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Dashboard Overview</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card stat-card text-white bg-primary mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <a href="{% url 'admins:payout_list' %}" class="card-title" >Pending Payouts</a> 
+                        <h2 class="mb-0">{{ pending_payouts }}</h2>
+                    </div>
+                    <i class="bi bi-cash-coin" style="font-size: 2rem;"></i>
+                </div>
+                <a href="" class="stretched-link"></a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card stat-card text-white bg-warning mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <a href="{% url 'admins:refund_list'%}" class="card-title" >Pending Refunds</a> 
+                        <h2 class="mb-0">{{ pending_refunds }}</h2>
+                    </div>
+                    <i class="bi bi-arrow-counterclockwise" style="font-size: 2rem;"></i>
+                </div>
+                <a href="" class="stretched-link"></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+{% endblock %}

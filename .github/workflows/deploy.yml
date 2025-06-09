@@ -1,0 +1,96 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy-instance1:
+    runs-on: ubuntu-latest
+    name: Deploy to Instance 1
+    steps:
+      - name: Checkout code 
+        uses: actions/checkout@v4
+
+      - name: Add EC2 Host to Known Hosts
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          touch ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.EC2_HOST1 }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST1 }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY1 }}
+          script: |
+            # Create directory and navigate
+            mkdir -p /home/$USER/foodonline
+            cd /home/$USER/foodonline
+            
+            # Initialize Git repository if needed
+            if [ ! -d .git ]; then
+              git init
+              git remote add origin https://github.com/Mahasethmanish987/deploy-multivendorapp.git
+            fi
+            
+            # Get latest code
+            git fetch origin
+            git reset --hard origin/master
+            
+            # Run docker compose commands
+            docker compose -f docker-compose.yml down || true
+            docker compose -f docker-compose.yml build
+            docker compose -f docker-compose.yml up -d
+            
+            # Verify deployment
+            docker ps
+            docker compose -f docker-compose.yml logs -t --tail=100
+
+  deploy-instance2:
+    runs-on: ubuntu-latest
+    name: Deploy to Instance 2
+    steps:
+      - name: Checkout code 
+        uses: actions/checkout@v4
+
+      - name: Add EC2 Host to Known Hosts
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          touch ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.EC2_HOST2 }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST2 }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY2 }}
+          script: |
+            # Create directory and navigate
+            mkdir -p /home/$USER/foodonline
+            cd /home/$USER/foodonline
+            
+            # Initialize Git repository if needed
+            if [ ! -d .git ]; then
+              git init
+              git remote add origin https://github.com/Mahasethmanish987/deploy-multivendorapp.git
+            fi
+            
+            # Get latest code
+            git fetch origin
+            git reset --hard origin/master
+            
+            # Run docker compose commands
+            docker compose -f docker-compose-tier.yml down || true
+            docker compose -f docker-compose-tier.yml build
+            docker compose -f docker-compose-tier.yml up -d
+            
+            # Verify deployment
+            docker ps
+            docker compose -f docker-compose-tier.yml logs -t --tail=100

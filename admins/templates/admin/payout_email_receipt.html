@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Receipt - FoodOnline Marketplace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #C33332, #a02828);
+            padding: 30px 0;
+            text-align: center;
+        }
+        
+        .logo {
+            width: 200px;
+            margin-bottom: 15px;
+        }
+        
+        .header-content {
+            color: white;
+            padding: 0 20px;
+        }
+        
+        .header h1 {
+            font-size: 26px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 35px;
+        }
+        
+        .greeting {
+            margin-bottom: 20px;
+            font-size: 17px;
+        }
+        
+        .greeting strong {
+            color: #C33332;
+        }
+        
+        .payment-card {
+            background: #ffffff;
+            border: 1px solid #eaeaea;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .payment-highlight {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .amount {
+            font-size: 38px;
+            font-weight: 700;
+            color: #27ae60;
+            margin: 10px 0;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            background: #e6f7ff;
+            color: #1890ff;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 15px;
+            margin-top: 10px;
+        }
+        
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+        }
+        
+        .details-table th {
+            text-align: left;
+            padding: 12px;
+            background-color: #f8f9fa;
+            font-weight: 600;
+            border-bottom: 1px solid #eaeaea;
+            width: 40%;
+        }
+        
+        .details-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-weight: 500;
+        }
+        
+        .dashboard-button {
+            display: block;
+            width: 100%;
+            background: linear-gradient(135deg, #C33332, #a02828);
+            color: white !important;
+            text-align: center;
+            padding: 15px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 17px;
+            margin: 25px 0 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .dashboard-button:hover {
+            background: linear-gradient(135deg, #a02828, #7a1e1e);
+            box-shadow: 0 4px 12px rgba(195, 51, 50, 0.3);
+        }
+        
+        .sales-link {
+            display: block;
+            text-align: center;
+            margin: 15px 0;
+            font-size: 16px;
+        }
+        
+        .sales-link a {
+            color: #C33332;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .support {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 15px;
+        }
+        
+        .support a {
+            color: #C33332;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .footer {
+            background-color: #343a40;
+            color: #fff;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        
+        .footer p {
+            margin: 8px 0;
+            opacity: 0.8;
+            font-size: 14px;
+        }
+        
+        .footer-links {
+            margin: 15px 0;
+        }
+        
+        .footer-links a {
+            color: #fff;
+            text-decoration: none;
+            margin: 0 10px;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+            font-size: 13px;
+        }
+        
+        .footer-links a:hover {
+            opacity: 1;
+        }
+        
+        .copyright {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 13px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header Section -->
+        <div class="header">
+            <img src="https://rathank.com/foodonline/logo/logo.png" alt="FoodOnline Marketplace" class="logo">
+            <div class="header-content">
+                <h1>PAYMENT CONFIRMATION</h1>
+                <p>Your recent earnings have been processed</p>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="content">
+            <div class="greeting">
+                <p>Hello <strong>{{ vendor_name }}</strong>,</p>
+                <p>We've successfully processed your payment for recent sales. Here are your payment details:</p>
+            </div>
+            
+            <div class="payment-card">
+                <div class="payment-highlight">
+                    <div class="amount">{{ amount }}</div>
+                    <span class="status-badge">Payment Completed</span>
+                </div>
+                
+                <table class="details-table">
+                    <tr>
+                        <th>Transaction ID</th>
+                        <td>{{ transaction_id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Payment Date</th>
+                        <td>{{transaction_date}}</td>
+                    </tr>
+                    <tr>
+                        <th>Payment Method</th>
+                        <td>esewa</td>
+                    </tr>
+                    
+                    <tr>
+                        <th>Deposited To</th>
+                        <td>esewa</td>
+                    </tr>
+                </table>
+                
+                <a href="" class="dashboard-button">
+                    View Payment Details
+                </a>
+                
+                <div class="sales-link">
+                    <a href="http://127.0.0.1:8000/order/payouts_detail/{{ payout_id }}/">
+                        View detailed list of items sold
+                    </a>
+                </div>
+            </div>
+            
+            <div class="support">
+                <p>Questions about this payment? <a href="mailto:support@foodonline.com">Contact support</a></p>
+            </div>
+            
+            <p style="margin-top: 25px;">
+                Best regards,<br>
+                <strong>The FoodOnline Marketplace Team</strong>
+            </p>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-links">
+                <a href="#">Help Center</a>
+                <a href="#">Support</a>
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+            </div>
+            
+            <p>123 Market Street, Food City, FC 10001</p>
+            <p>support@foodonline.com | (800) 123-4567</p>
+            
+            <div class="copyright">
+                <p>© 2023 FoodOnline Marketplace, Inc. All rights reserved.</p>
+                <p>This is an automated message - please do not reply directly.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

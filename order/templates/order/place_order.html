@@ -1,0 +1,205 @@
+{% extends 'myapp/base.html' %}
+{% load static %}
+{% block body %}
+<div class="main-section">
+
+    <div class="page-section">
+        <div class="container">
+            <div class="row">
+
+                <div class="col-lg-6 col-md-6 col-sm-12 col-xs-6">
+                    <div class="tabs-holder horizontal">
+                        <ul class="stickynav-tabs nav nav-tabs">
+                            <li class="active"><a data-toggle="tab" href="#home"><i
+                                        class="fa fa-shopping-cart text-danger"></i>Review your billing address</a></li>
+
+                        </ul>
+                        <div class="tab-content">
+                            <div id="home" class="tab-pane in active">
+                                <div class="menu-itam-holder">
+
+
+                                    <div id="menu-item-list-6272" class="menu-itam-list">
+                                        <div class="billing-address">
+                                            <div><b>{{order.name}}</b></div>
+                                            <div>{{order.address}}</div>
+                                            <div>{{order.state}}--{{order.country}}--{{order.pin_code}}</div>
+                                            
+                                            <div><b>phone:{{order.phone}}</b></div>
+                                            <div><b>email:{{order.email}}</b></div>
+                                            <div><b>Payment:{{order.payment_method}}</b></div>
+                                            <br>
+                                            <div><a href="{%url 'marketplace:checkout'%}" class="btn btn-outline-danger">Edit</a>
+                                            </div>
+                                        </div>
+
+
+
+
+                                    </div>
+
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                <!-- Your order -->
+                <div class="col-lg-6 col-md-6 col-sm-12 col-xs-6">
+                    <div class="tabs-holder horizontal">
+                        <ul class="stickynav-tabs nav nav-tabs">
+                            <li class="active"><a data-toggle="tab" href="#home"><i
+                                        class="icon- icon-room_service"></i>Your Order</a></li>
+
+                        </ul>
+                        <div class="tab-content">
+                            <!-- Home Tab Content -->
+                            <div id="home" class="tab-pane in active">
+                                <div class="menu-itam-holder">
+                                    <div id="menu-item-list-6272" class="menu-itam-list">
+
+                                        <ul>
+                                            {% for cart_item in cart_items %}
+                                            {% if cart_item.vendor_is_open%}
+                                               <li id="cart-item-{{cart_item.id}}">
+
+                                                <div class="image-holder"> <img src="{{cart_item.fooditem.image.url}}"
+                                                        alt=""></div>
+                                                <div class="text-holder">
+                                                    <h6>{{cart_item.fooditem}}</h6>
+
+                                                    <a href="{% url 'marketplace:vendor_detail' cart_item.fooditem.vendor.vendor_slug %}"
+                                                        class="badge badge-warning">{{cart_item.fooditem.vendor}}</a>
+                                                </div>
+                                                <div class="quantity"
+                                                    style="display:inline-block;position:absolute;top:50%; transform:translateY(-50%);margin-top:-10px">
+                                                    <span>{{cart_item.quantity}} QTY</span>
+
+                                                </div>
+                                                <div class="price-holder">
+                                                    <span class="price">Rs{{cart_item.fooditem.price}}</span>
+
+
+
+
+
+                                                </div>
+                                            </li>
+                                            {% endif %}
+                                            {% endfor %}
+
+                                            <!-- Subtotal -->
+                                            <li class="order-item">
+                                                Subtotal
+                                                <span class="price float-right">
+                                                    <span class="currency">Rs</span>
+                                                    <span id="subtotal">{{grand_total}}</span>
+                                                </span>
+                                            </li>
+
+                                            <!-- Tax -->
+                                            
+
+                                            <!-- Total -->
+                                            <li class="order-item font-weight-bold">
+                                                Total
+                                                <span class="price float-right">
+                                                    <span class="currency">Rs</span>
+                                                    <span id="total">{{grand_total}}</span>
+                                                </span>
+                                            </li>
+                                            
+                                            {% if order.payment_method == 'esewa' %}
+                                            <form action="https://rc-epay.esewa.com.np/api/epay/main/v2/form"
+                                                method="POST" id="payment-form">
+                                                <input type="hidden" id="amount" name="amount" value="" required>
+                                                <input type="hidden" id="tax_amount" name="tax_amount" value="0"
+                                                    required>
+                                                <input type="hidden" id="total_amount" name="total_amount" value=""
+                                                    required>
+                                                <input type="hidden" id="transaction_uuid" name="transaction_uuid"
+                                                    value="241028" required>
+                                                <input type="hidden" id="product_code" name="product_code" value=""
+                                                    required>
+                                                <input type="hidden" id="product_service_charge"
+                                                    name="product_service_charge" value="0" required>
+                                                <input type="hidden" id="product_delivery_charge"
+                                                    name="product_delivery_charge" value="0" required>
+                                                <input type="hidden" id="success_url" name="success_url"
+                                                    value="https://foodonline.run.place/order/handle_esewa/" required>
+                                                <input type="hidden" id="failure_url" name="failure_url"
+                                                    value="http://foodonline.run.place/order/failed_handle_esewa" required>
+                                                <input type="hidden" id="signed_field_names" name="signed_field_names"
+                                                    value="total_amount,transaction_uuid,product_code" required>
+                                                <input type="hidden" id="signature" name="signature" value="" required>
+                                                <button onclick="generateSignature(event)" type="submit"
+                                                    class="btn btn-success">Pay with eSewa</button>
+                                            </form>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+
+</div>
+<script>
+    
+    function generateSignature(event) {
+        event.preventDefault()
+        const url = '{{api_url }}'
+
+        $.ajax({
+            url: url,
+            method: 'GET',
+            success: function (response) {
+
+                if (response.status === 'login_required') {
+                    alert('hlw1')
+
+                }
+                else if (response.status === 'Failed') {
+                    alert('hlw2')
+
+                }
+                else {
+
+                    document.getElementById('transaction_uuid').value = response.transaction_uuid;
+                    document.getElementById('total_amount').value = response.amount;
+                    document.getElementById('amount').value = response.amount;
+                    document.getElementById('product_code').value = response.product_code;
+                    document.getElementById('signature').value = response.signature;
+                    document.getElementById('payment-form').submit();
+
+
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error('Error:', error);
+                alert('An error occurred.');
+            }
+
+        })
+    }
+    function getCSRFToken() {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        return csrfToken;
+    }
+                sendTransaction(transaction_id,payment_method,status)
+
+
+
+
+
+
+     
+</script>
+{% endblock %}

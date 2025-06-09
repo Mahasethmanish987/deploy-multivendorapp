@@ -1,0 +1,77 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta name="csrf-token" content="{{ csrf_token }}">
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>FoodOnline</title>
+	<!-- Google Font Family Link Start -->
+	<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Montserrat:400,700">
+	<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Open+Sans:400,700,800">
+	<!-- Google Font Family Link End -->
+
+	<!-- CSS -->
+	<link href="{% static 'css/iconmoon.css' %}" rel="stylesheet">
+	<link href="{% static 'css/style.css' %}" rel="stylesheet">
+	<link href="{% static 'css/cs-foodbakery-plugin.css' %}" rel="stylesheet">
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+	<link href="{% static 'css/bootstrap-slider.css' %}" rel="stylesheet">
+	<link rel="stylesheet" href="{% static 'css/custom.css' %}">
+	
+
+	<!-- In <head> -->
+	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+	<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+	<!-- JAVASCRIPT -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+	<script src="{% static 'js/modernizr.js' %}"></script>
+	<script src="{% static 'js/bootstrap.js' %}"></script>
+	<script src="https://code.jquery.com/jquery-3.6.4.min.js"
+		integrity="sha384-oRDOF8lE88yXkwYMeIxw05eXi6zCEnYBHFmF0nLgkG9gF0qqDWT2Z4IzjCAePI95"
+		crossorigin="anonymous"></script>
+	<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+	<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+	
+  {%  block head %}
+  {% endblock %}
+
+	<style>
+		body,
+		.main-section p,
+		.mce-content-body p {
+			font: Normal 14px/24px "Open Sans", sans-serif;
+			letter-spacing: 0px;
+			text-transform: none;
+			color: #515151 !important;
+		}
+	</style>
+</head>
+<!-- Before </body> -->
+
+<body>
+	{% include 'myapp/navbar.html' %}
+	{% include 'myapp/alerts.html' %}
+	{% block body %}
+
+	{% endblock %}
+	{% if request.path == '/' or 'profile' in request.path or 'checkout' in request.path%}
+	<script defer
+		src="https://maps.googleapis.com/maps/api/js?key={{GOOGLE_API_KEY}}&libraries=places&callback=initAutoComplete"></script>
+	{% endif %}
+	<script src="{% static 'js/custom.js' %}"></script>
+	{% include 'myapp/footer.html'%}
+	{% block scripts %}
+	{% endblock %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+</body>
+
+
+</html>

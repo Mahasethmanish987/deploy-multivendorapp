@@ -1,0 +1,202 @@
+{% extends 'myapp/base.html' %}
+{% load static %}
+{% block body %}
+
+<div class="container mt-5 mb-5">
+    <div class="justify-content-center row">
+        <div class="col-md-10 col-lg-8">
+            <div class="bg-white p-3 p-md-4 shadow-sm rounded">
+                <div class="text-center mb-4">
+                    <img src="{{ base_url }}{% static 'logo/foodOnlineLogo.png'%}" alt="foodonline Logo" class="img-fluid"
+                        style="max-width: 300px;">
+                </div>
+
+                <!-- Header Section -->
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <h3 class="text-primary">Thank you for your order!</h3>
+                    </div>
+                    <div class="col-md-6 text-md-right">
+                        <div class="bg-light p-3 rounded">
+                            <p class="mb-1"><strong>{{order.first_name}}</strong></p>
+                            <p class="mb-1 small">{{order.address}}</p>
+                            <p class="mb-1">{{order.phone}}</p>
+                            <p class="mb-0">{{order.email}}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Details -->
+                <div class="alert alert-secondary">
+                    <h5 class="mb-0">Hello {{order.name}},</h5>
+                    <p class="mb-0">Thank you for your order. Review your order details below</p>
+                </div>
+
+                <!-- Order Meta -->
+                <div class="row mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="border p-2 rounded text-center">
+                            <small class="text-muted d-block">Order Date</small>
+                            <strong>{{order.created_at|date:"d M Y"}}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="border p-2 rounded text-center order-meta-item">
+                            <small class="text-muted d-block">Order Number</small>
+                            <strong class="order-number">{{order.order_number}}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3 mt-2 mt-md-0">
+                        <div class="border p-2 rounded text-center">
+                            <small class="text-muted d-block">Payment Method</small>
+                            <strong>{{order.payment_method}}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3 mt-2 mt-md-0">
+                        <div class="border p-2 rounded text-center">
+                            <small class="text-muted d-block">Transaction ID</small>
+                            <strong class="text-break">{{order.payment.transaction_id}}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Items Table -->
+                <div class="table-responsive">
+                    <table class="table">
+                        <tbody>
+                            {% for item in ordered_food %}
+                            <tr>
+                                <td class="align-middle" style="width: 120px">
+                                    <img src="{{base_url}}{{item.fooditem.image.url}}" class="img-fluid rounded"
+                                        style="max-height: 80px; width: auto;">
+                                </td>
+                                <td class="align-middle">
+                                    <div class="d-flex flex-column">
+                                        <h6 class="mb-1">{{item.fooditem}}</h6>
+                                        <small class="text-muted">
+                                            Vendor:
+                                            <a href="{% url 'marketplace:vendor_detail' item.fooditem.vendor.vendor_slug %}"
+                                                class="text-decoration-none">
+                                                {{item.fooditem.vendor.vendor_name}}
+                                            </a>
+                                        </small>
+                                    </div>
+                                </td>
+                                <td class="align-middle text-center">
+                                    <span class="badge badge-pill badge-primary">{{item.quantity}}</span>
+                                </td>
+                                <td class="align-middle text-right">
+                                    Rs{{item.fooditem.price}}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Payment Summary -->
+                <div class="row mt-4">
+                    <div class="col-md-6 mb-4 mb-md-0">
+                        <div class="text-center">
+                            <img src="{{ base_url }}{% static 'images/paid.png'%}" class="img-fluid" style="max-width: 200px;">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="bg-light p-3 rounded">
+                            <ul class="list-unstyled mb-0">
+                                <li class="d-flex justify-content-between mb-2">
+                                    <span>Subtotal:</span>
+                                    <span>Rs{{subtotal}}</span>
+                                </li>
+                                <li class="d-flex justify-content-between font-weight-bold">
+                                    <span>Total:</span>
+                                    <span>Rs{{order.total}}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="row mt-4 pt-3 border-top">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Thanks for ordering with us!</h6>
+                        <p class="small mb-0">The FoodOnline Team</p>
+                    </div>
+                    <div class="col-md-6 text-md-right">
+                        <h6 class="text-primary">Need Help?</h6>
+                        <p class="small mb-0">Call us: 9817680523</p>
+                        <p class="small mb-0">Email: support@foodonline.com</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="text-center mt-4">
+    <a href="{% url 'order:download_pdf' order.order_number %}" 
+       class="btn btn-danger">
+        <i class="fas fa-file-pdf"></i> Download Invoice
+    </a>
+</div>
+
+<style>
+    @media (max-width: 768px) {
+
+        .table td,
+        .table th {
+            padding: 0.75rem;
+        }
+
+        .badge {
+            font-size: 0.8rem;
+        }
+
+        h6 {
+            font-size: 1rem;
+        }
+
+    }
+
+    .order-meta-item strong {
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    .order-number {
+        font-size: 0.9em;
+    }
+
+    @media (max-width: 768px) {
+        .order-meta-item strong {
+            font-size: 0.85rem;
+        }
+    }
+</style>
+{% if pdf_mode %}
+    <!-- PDF-specific styles -->
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        body {
+            font-size: 12px;
+            padding: 20px;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table td, .table th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+    </style>
+{% endif %}
+
+{% endblock %}

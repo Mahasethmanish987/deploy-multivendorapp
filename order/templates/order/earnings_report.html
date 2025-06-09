@@ -1,0 +1,115 @@
+
+{% extends 'myapp/base.html' %}
+
+{% load static %}
+
+
+{% block body %}
+
+<div class="main-section">
+    {% include 'vendor/cover.html' %}
+    <div class="page-section account-header buyer-logged-in">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
+                    {% include 'vendor/v_sidebar.html' %}
+                </div>
+                <div class="col-lg-9 col-md-9 col-sm-12 col-xs-12">
+                    <div class="user-dashboard loader-holder">
+                        <div class="user-holder">
+                            <h4 class="text-uppercase">Earnings Report</h4>
+                            <p>As of {{ current_date }}</p>
+                            
+                            <!-- Summary Cards -->
+                            <div class="row mb-5">
+                                <div class="col-lg-3 col-md-6 mb-3">
+                                    <div class="card card-body bg-light-success">
+                                        <h6>Today</h6>
+                                        <h3>Rs. {{ today|floatformat:2 }}</h3>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6 mb-3">
+                                    <div class="card card-body bg-light-info">
+                                        <h6>This Week</h6>
+                                        <h3>Rs. {{ weekly|floatformat:2}}</h3>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6 mb-3">
+                                    <div class="card card-body bg-light-warning">
+                                        <h6>This Month</h6>
+                                        <h3>Rs. {{ monthly|floatformat:2 }}</h3>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6 mb-3">
+                                    <div class="card card-body bg-light-primary">
+                                        <h6>All Time</h6>
+                                        <h3>Rs. {{ total|floatformat:2 }}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Monthly Breakdown -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Monthly Earnings Breakdown</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Month</th>
+                                                    <th class="text-right">Earnings</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for month in monthly_breakdown %}
+                                                <tr>
+                                                    <td>{{ month.month|date:"F Y" }}</td>
+                                                    <td class="text-right">Rs. {{ month.earnings|floatformat:2 }}</td>
+                                                </tr>
+                                                {% empty %}
+                                                <tr>
+                                                    <td colspan="2" class="text-center">No earnings data available</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+/* Earnings Report Styles */
+.bg-light-success { background-color: #e8f5e9 !important; }
+.bg-light-info { background-color: #e3f2fd !important; }
+.bg-light-warning { background-color: #fff8e1 !important; }
+.bg-light-primary { background-color: #f3e5f5 !important; }
+
+.card-body h6 {
+    color: #555;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.card-body h3 {
+    font-weight: 700;
+    margin-bottom: 0;
+}
+
+.table-responsive {
+    margin-top: 20px;
+}
+
+.table th {
+    border-top: none;
+}
+
+</style>
+{% endblock %}

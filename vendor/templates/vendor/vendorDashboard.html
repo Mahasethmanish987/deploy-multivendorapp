@@ -1,0 +1,209 @@
+{% extends 'myapp/base.html' %}
+{% load static %}
+{% block body %}
+
+<div class="main-section">
+    {% include 'vendor/cover.html' %}
+    <div class="page-section account-header buyer-logged-in">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
+                    {% include 'vendor/v_sidebar.html' %}
+                </div>
+                <div class="col-lg-9 col-md-9 col-sm-12 col-xs-12">
+                    <div class="user-dashboard loader-holder">
+                        <div class="user-holder">
+                            <h4 class="mb-4">Pending Orders</h4>
+                            <div id="orders-container">
+                                {% for ordered in ordered_food %}
+                                <div class="order-card" data-order-id="{{ ordered.order.id }}"
+                                    data-food-id="{{ ordered.id }}">
+                                    <div class="border rounded p-3 mb-3 shadow-sm">
+                                        <p><strong>{{ ordered.fooditem.food_title }}</strong> × {{ ordered.quantity }}
+                                            (Rs. {{ ordered.amount }})</p>
+                                        <p>Customer: {{ ordered.user.username }} | {{ ordered.order.phone }} | 
+                                            {{ordered.order.address }} | {{ ordered.created_at|date:"M d, H:i" }}</p>
+                                        <div class="status-control">
+                                            <span class="current-status {{ ordered.status|lower }}">
+                                                Current: {{ ordered.status}}
+                                            </span>
+                                            <form method="POST" action="{% url 'order:update_order_status'%}"
+                                                class="d-flex gap-2 order-action-form">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="food_id" value="{{ ordered.id }}">
+                                                <select name="status" class="form-select form-select-sm status-select">
+
+
+                                                    <option value="" selected>-- Select Status --</option>
+                                                    <option value="accepted">Accepted</option>
+                                                    <option value="cancelled">cancelled</option>
+
+                                                </select>
+                                                <button type="submit" class="btn btn-sm btn-primary">Update</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <p>No pending orders.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // WebSocket connections storage
+        const orderSockets = {};
+
+        {% for ordered in ordered_food %}
+        (function (orderId, foodId) {
+            // Create WebSocket connection
+            const socket = new WebSocket(
+                `ws://foodonline.run.place/ws/order/${foodId}/`
+            );
+
+            // Store socket reference
+            orderSockets[`${orderId}-${foodId}`] = socket;
+
+            socket.onmessage = function (e) {
+                const data = JSON.parse(e.data);
+                console.log(data)
+                const orderCard = document.querySelector(
+                    `div[data-order-id="${orderId}"][data-food-id="${foodId}"]`
+                );
+
+                if (orderCard) {
+                    // Update status display
+
+                    const statusDisplay = orderCard.querySelector('.current-status');
+                    statusDisplay.className = `current-status ${data.status.toLowerCase()}`;
+                    statusDisplay.textContent = `Current: ${data.status.charAt(0).toUpperCase() + data.status.slice(1)}`;
+
+                    // Update select element
+                    if (data.status == 'cancelled') {
+                        const form = orderCard.querySelector('.order-action-form');
+                        if (form) {
+                            form.remove();  // Completely removes the form from the page
+                        }
+
+                    }
+                    if (data.status == 'completed') {
+                        const form = orderCard.querySelector('.order-action-form');
+                        if (form) {
+                            form.remove();  // Completely removes the form from the page
+                        }
+
+                    }
+                     else {
+                        const select = orderCard.querySelector('.status-select');
+                        select.innerHTML = '';
+                        const option = document.createElement('option')
+                        option.value = 'completed'
+                        option.textContent = 'completed'
+                        select.appendChild(option)
+                    }
+
+
+                    // Visual feedback
+                    orderCard.classList.add('status-updated');
+                    setTimeout(() => orderCard.classList.remove('status-updated'), 1000);
+                }
+            };
+
+            socket.onclose = function () {
+                delete orderSockets[`${orderId}-${foodId}`];
+            };
+
+        })('{{ ordered.order.id }}', '{{ ordered.id }}');
+        {% endfor %}
+
+        // Handle form submissions
+        document.querySelectorAll('.order-action-form').forEach(form => {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                const formData = new FormData(this);
+                const foodId = formData.get('food_id');
+                const newStatus = formData.get('status');
+                if (!newStatus) {
+                    alert("Please select a valid status before submitting.");
+                    return;
+                }
+
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.success) {
+                            alert('Update failed: ' + data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            });
+        });
+
+        // Cleanup on page leave
+        window.addEventListener('beforeunload', () => {
+            Object.values(orderSockets).forEach(socket => socket.close());
+        });
+    });
+</script>
+
+<style>
+    .order-card {
+        transition: all 0.3s ease;
+    }
+
+    .status-updated {
+        background-color: rgba(144, 238, 144, 0.3);
+        border-left: 4px solid #28a745;
+    }
+
+    .current-status {
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-weight: 500;
+    }
+
+    .current-status.new {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .current-status.pending {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+
+    .current-status.preparing {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .current-status.ready {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .current-status.cancelled {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .status-select {
+        max-width: 150px;
+    }
+</style>
+
+{% endblock %}
