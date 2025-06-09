@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED=1 \
     GEOS_VERSION=3.11.2 \
     PROJ_VERSION=9.3.1
 
-# Install system dependencies
+# Install system dependencies - FIXED PACKAGES
 RUN apt-get update && \
     apt-get install -y \
     build-essential \
@@ -20,7 +20,7 @@ RUN apt-get update && \
     libcurl4-openssl-dev \
     libssl-dev \
     libxml2-dev \
-    libgeos++-dev \
+    libgeos-dev \
     gettext \
     python3-dev \
     python3-pip \
@@ -28,9 +28,9 @@ RUN apt-get update && \
     swig \
     libsqlite3-0 \
     sqlite3 \
-    libtiff5 \
-    libcurl4 \
     && rm -rf /var/lib/apt/lists/*
+
+# ... rest of the Dockerfile remains the same ...
 
 # Install PROJ from source
 RUN wget https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz \
