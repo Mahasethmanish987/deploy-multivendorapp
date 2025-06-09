@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED=1 \
     GEOS_VERSION=3.11.2 \
     PROJ_VERSION=9.1.1
 
-# Install system dependencies
+# Install system dependencies with additional required packages
 RUN apt-get update && \
     apt-get install -y \
     build-essential \
@@ -22,15 +22,22 @@ RUN apt-get update && \
     libxml2-dev \
     libgeos++-dev \
     gettext \
-    
+    # Additional dependencies for PROJ
+    python3-dev \
+    python3-pip \
+    python3-setuptools \
+    swig \
+    # Postgres client (if needed)
+    # postgresql-client-13 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PROJ from source
+# Install PROJ from source with Python bindings disabled
 RUN wget https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz \
     && tar -xzf proj-${PROJ_VERSION}.tar.gz \
     && cd proj-${PROJ_VERSION} \
     && mkdir build && cd build \
-    && cmake .. -DCMAKE_BUILD_TYPE=Release \
+    # Disable Python bindings to prevent configuration issues
+    && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON_BINDINGS=OFF \
     && make -j$(nproc) \
     && make install \
     && cd ../.. \
@@ -51,7 +58,8 @@ RUN wget https://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2 \
 RUN wget https://github.com/OSGeo/gdal/releases/download/v${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz \
     && tar -xzf gdal-${GDAL_VERSION}.tar.gz \
     && cd gdal-${GDAL_VERSION} \
-    && ./configure --with-geos=yes --with-proj=/usr/local \
+    # Configure without Python bindings
+    && ./configure --with-geos=yes --with-proj=/usr/local --without-python \
     && make -j$(nproc) \
     && make install \
     && cd .. \
@@ -92,4 +100,4 @@ RUN python -c "import numpy; print(f'NumPy version: {numpy.__version__}')" && \
 COPY . .
 
 # Set production-ready command (using Gunicorn)
-CMD ["python","manage.py","runserver","0.0.0.0:8000"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
