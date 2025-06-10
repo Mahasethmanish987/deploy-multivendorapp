@@ -1,34 +1,66 @@
 #!/bin/sh
+set -x  # Enable command echoing for debugging
+exec > /var/log/entrypoint.log 2>&1  # Log all output
+DOMAIN="${DOMAIN:-foodonline.run.place}"
+EMAIL="${EMAIL:-mahasethmanish63@gmail.com}" 
+WEBROOT_PATH="/var/www/certbot" 
+SSL_DIR="/etc/letsencrypt/live/$DOMAIN"
 
-# Phase 1: Start temporary Nginx for certificate issuance
-echo "Starting temporary Nginx for SSL setup..."
-nginx -c /etc/nginx/nginx.conf
+start_temp_nginx() {
+    echo "Starting temporary HTTP server..."
+    nginx -g "daemon on;"
+}
 
-# Phase 2: Obtain SSL certificates
-if [ ! -f /etc/letsencrypt/live/foodonline.run.place/fullchain.pem ]; then
-    echo "No SSL certificates found. Obtaining new certificates..."
-    
-    # Verify challenge is accessible locally first
-    echo "Verifying local challenge access..."
-    touch /var/www/certbot/test.txt
-    curl -f http://localhost/.well-known/acme-challenge/test.txt || exit 1
-    
-    certbot certonly --webroot -w /var/www/certbot \
-        --email your-email@example.com --agree-tos --no-eff-email \
-        -d foodonline.run.place \
-        --non-interactive --force-renewal || { 
-            echo "Certificate request failed"
-            exit 1
-        }
+# Stop temporary HTTP server
+stop_temp_nginx() {
+    echo "Stopping temporary HTTP server..."
+    nginx -s quit
+}
+
+request_initial_cert() {
+    echo "Requesting initial certificate for $DOMAIN"
+    certbot certonly --webroot -w "$WEBROOT_PATH" \
+        -d "$DOMAIN" \
+        --non-interactive \
+        --agree-tos \
+        --email "$EMAIL" \
+        --rsa-key-size 4096 \
+        --force-renewal  # Ensure new certs even if testing
+}
+
+renew_certs() {
+    echo "Checking for certificate renewals..."
+    certbot renew --webroot -w "$WEBROOT_PATH" \
+        --non-interactive \
+        --agree-tos \
+        --rsa-key-size 4096
+}
+
+set_permissions() {
+    echo "Setting permissions..."
+    chown -R nginx:nginx "$WEBROOT_PATH"
+    chmod -R 755 "$WEBROOT_PATH"
+    chown -R nginx:nginx /etc/letsencrypt
+    chmod -R 755 /etc/letsencrypt
+}
+
+mkdir -p "$WEBROOT_PATH/.well-known/acme-challenge"
+set_permissions
+
+# Phase 1: Start temporary HTTP server
+start_temp_nginx
+
+# Phase 2: Certificate management
+if [ ! -f "$SSL_DIR/fullchain.pem" ]; then
+    echo "Certificate not found - initial setup required"
+    request_initial_cert
 else
-    echo "Existing SSL certificates found"
+    echo "Existing certificates found"
+    renew_certs
 fi
 
-# Phase 3: Stop temporary Nginx
-echo "Stopping temporary Nginx..."
-nginx -s quit
-sleep 2
+stop_temp_nginx
 
-# Phase 4: Start final Nginx with SSL config
-echo "Starting Nginx with SSL configuration..."
+# Phase 4: Start production server
+echo "Starting production Nginx with SSL..."
 exec nginx -g "daemon off;"

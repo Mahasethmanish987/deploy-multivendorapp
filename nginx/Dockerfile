@@ -1,7 +1,13 @@
-ubuntu@ip-172-31-47-230:~/foodonline$
-RUN mkdir -p /etc/letsencrypt/live/foodonline.run.place
-RUN: command not found
-ubuntu@ip-172-31-47-230:~/foodonline$ RUN mkdir -p /etc/letsencrypt/live/foodonline.run.place
-RUN: command not found
-ubuntu@ip-172-31-47-230:~/foodonline$ ^C
-ubuntu@ip-172-31-47-230:~/foodonline$
+FROM nginx:1.25-alpine
+
+# Copy configurations
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY entrypoint.sh /entrypoint.sh
+
+# Install Certbot
+RUN apk add --no-cache certbot && \
+    chmod +x /entrypoint.sh
+
+VOLUME ["/etc/letsencrypt", "/var/www/certbot"]
+
+ENTRYPOINT ["/entrypoint.sh"]
