@@ -170,12 +170,18 @@ DEFAULT_FROM_EMAIL = "mahasethmanish63@gmail.com"
 AWS_DEFAULT_ACL = None
 AWS_QUERYSTRING_AUTH = False
 AWS_LOCATION = 'static'
-
-STATICFILES_STORAGE = 'mysite.s3_utils.StaticStorage'
-STATIC_URL = '/static/'
-MEDIA_URL = '/media/'
-
-DEFAULT_FILE_STORAGE = 'mysite.s3_utils.MediaStorage'
+STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
+MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+try:
+    from mysite.s3_utils import StaticStorage, MediaStorage
+    STATICFILES_STORAGE = 'mysite.storage.S3ManifestStaticStorage'
+    DEFAULT_FILE_STORAGE = 'mysite.s3_utils.MediaStorage'
+except ImportError as e:
+    print(f"Error importing storage classes: {e}")
+    # Fall back to default if in debug
+    if DEBUG:
+        STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+        DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 if not IS_DOCKER:
     # Windows-specific paths
