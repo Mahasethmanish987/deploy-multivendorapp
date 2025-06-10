@@ -5,16 +5,17 @@ RUN apk update && \
     apk add --no-cache \
         certbot \
         openssl \
-        tzdata && \
+        tzdata \
+        curl && \  # Added curl for health checks
     rm -rf /var/cache/apk/*
 
 # Remove default config
 RUN rm /etc/nginx/conf.d/default.conf
 
 # Copy custom configuration
-COPY nginx.conf /etc/nginx/conf.d/foodonline.conf
+COPY nginx.conf /etc/nginx/nginx.conf  # Changed path to main config
 
-# Copy entrypoint script and convert line endings
+# Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh
 RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 

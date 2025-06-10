@@ -1,59 +1,32 @@
 #!/bin/sh
-set -e
 
-# Create necessary directories
-mkdir -p /var/www/certbot
-mkdir -p /var/log/letsencrypt
+# Phase 1: Start temporary Nginx for certificate issuance
+echo "Starting temporary Nginx for SSL setup..."
+nginx -c /etc/nginx/nginx.conf
 
-# Function to obtain certificate
-obtain_certificate() {
-  echo "Obtaining SSL certificate using webroot method..."
-  certbot certonly --webroot \
-    --non-interactive \
-    --agree-tos \
-    --email mahasethmanish63@gmail.com \
-    -d foodonline.run.place \
-    -d www.foodonline.run.place \
-    -w /var/www/certbot \
-    --logs-dir /var/log/letsencrypt \
-    --work-dir /var/lib/letsencrypt
-}
+# Wait for web service to be ready
+echo "Waiting for web service to be ready..."
+while ! curl -s http://web:8000 >/dev/null; do
+    sleep 5
+    echo "Still waiting for web service..."
+done
 
-# Always start Nginx first for webroot verification
-echo "Starting Nginx temporarily for certificate setup..."
-nginx -g 'daemon on;'  # Start in background
-
-# Run certbot if certificate doesn't exist
+# Phase 2: Obtain SSL certificates
 if [ ! -f /etc/letsencrypt/live/foodonline.run.place/fullchain.pem ]; then
-  obtain_certificate || {
-    echo "Certificate obtain failed, retrying with --staging for testing..."
-    certbot certonly --webroot \
-      --non-interactive \
-      --agree-tos \
-      --staging \
-      --email mahasethmanish63@gmail.com \
-      -d foodonline.run.place \
-      -d www.foodonline.run.place \
-      -w /var/www/certbot \
-      --logs-dir /var/log/letsencrypt \
-      --work-dir /var/lib/letsencrypt || true
-  }
+    echo "No SSL certificates found. Obtaining new certificates..."
+    certbot certonly --webroot -w /var/www/certbot \
+        --email your-email@example.com --agree-tos --no-eff-email \
+        -d foodonline.run.place \
+        --non-interactive || echo "Certificate request failed"
 else
-  echo "Certificate already exists. Skipping initial setup."
+    echo "Existing SSL certificates found"
 fi
 
-# Stop temporary Nginx
+# Phase 3: Stop temporary Nginx
 echo "Stopping temporary Nginx..."
-nginx -s stop
+nginx -s quit
+sleep 2
 
-# Setup cron job
-echo "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" > /etc/crontabs/root
-echo "0 0 * * * certbot renew --webroot -w /var/www/certbot --quiet --post-hook 'nginx -s reload'" >> /etc/crontabs/root
-chmod 0644 /etc/crontabs/root
-
-# Start cron
-crond -b -l 8
-
-# Start production Nginx
-echo "Starting production Nginx..."
-exec nginx -g 'daemon off;'
+# Phase 4: Start final Nginx with SSL config
+echo "Starting Nginx with SSL configuration..."
+nginx -g "daemon off;"
