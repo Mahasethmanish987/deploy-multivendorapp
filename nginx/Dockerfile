@@ -1,22 +1,19 @@
-# nginx/Dockerfile
-
 FROM nginx:latest
 
-# Install Certbot
+# Install Certbot (optional, but useful for manual renewals)
 RUN apt-get update && \
-    apt-get install -y certbot && \
-    apt-get clean
+    apt-get install -y certbot python3-certbot-nginx && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Create directories
+# Create required Certbot directories
 RUN mkdir -p /var/www/certbot/.well-known/acme-challenge
 
-# Copy custom NGINX config and entrypoint
+# Copy custom NGINX config (if needed)
 COPY nginx.conf /etc/nginx/nginx.conf
-COPY entrypoint.sh /entrypoint.sh
 
-RUN chmod +x /entrypoint.sh
-
-# Expose HTTP and HTTPS
+# Expose HTTP & HTTPS
 EXPOSE 80 443
 
-ENTRYPOINT ["/entrypoint.sh"]
+# Default command (just run NGINX)
+CMD ["nginx", "-g", "daemon off;"]
