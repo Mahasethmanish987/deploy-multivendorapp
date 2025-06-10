@@ -1,17 +1,22 @@
-FROM nginx:alpine
+# nginx/Dockerfile
 
-# Install Certbot and OpenSSL
-RUN apk add --no-cache certbot openssl
+FROM nginx:latest
 
-# Create directories for Certbot challenges and certificates
-RUN mkdir -p /var/www/certbot && \
-    mkdir -p /etc/letsencrypt
+# Install Certbot
+RUN apt-get update && \
+    apt-get install -y certbot && \
+    apt-get clean
 
-# Copy configurations and scripts
+# Create directories
+RUN mkdir -p /var/www/certbot/.well-known/acme-challenge
+
+# Copy custom NGINX config and entrypoint
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY entrypoint.sh /entrypoint.sh
 
-# Make entrypoint executable
 RUN chmod +x /entrypoint.sh
+
+# Expose HTTP and HTTPS
+EXPOSE 80 443
 
 ENTRYPOINT ["/entrypoint.sh"]

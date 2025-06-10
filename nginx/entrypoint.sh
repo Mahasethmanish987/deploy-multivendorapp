@@ -1,26 +1,29 @@
-#!/bin/sh
+#!/bin/bash
+
 set -e
 
-# Replace DOMAIN placeholder in nginx.conf
-envsubst '$DOMAIN' < /etc/nginx/nginx.conf > /etc/nginx/nginx.conf.tmp
-mv /etc/nginx/nginx.conf.tmp /etc/nginx/nginx.conf
+# Start NGINX temporarily for Certbot validation
+nginx
 
-# Start Nginx in background for ACME challenge
-nginx -g "daemon on;"
+# Wait for NGINX to start
+sleep 5
 
-# Obtain SSL certificate if missing
-if [ ! -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
-  certbot certonly \
-    --webroot \
-    -w /var/www/certbot \
-    -d $DOMAIN \
-    --email $EMAIL \
-    --non-interactive \
-    --agree-tos
+# Check if certificate already exists
+if [ ! -f "/etc/letsencrypt/live/yourdomain.com/fullchain.pem" ]; then
+    echo "Requesting Let's Encrypt certificate..."
+    certbot certonly --webroot \
+      --webroot-path=/var/www/certbot \
+      --agree-tos \
+      --no-eff-email \
+      --email mahasethmanish63@gmail.com \
+      -d foodonline.run.place \
+      --non-interactive
+else
+    echo "Certificate already exists. Skipping Certbot."
 fi
 
-# Stop background Nginx
-nginx -s quit
+# Stop temporary NGINX instance
+nginx -s stop
 
-# Start Nginx in foreground
-exec nginx -g "daemon off;"
+# Start NGINX in foreground
+exec nginx -g 'daemon off;'
