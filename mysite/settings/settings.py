@@ -1,9 +1,11 @@
 import os
 from pathlib import Path
-
+import sys
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+sys.path.append(str(BASE_DIR))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -168,10 +170,11 @@ DEFAULT_FROM_EMAIL = "mahasethmanish63@gmail.com"
 AWS_DEFAULT_ACL = None
 AWS_QUERYSTRING_AUTH = False
 AWS_LOCATION = 'static'
-STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
-STATICFILES_STORAGE = 'mysite.s3_utils.StaticStorage'
 
-MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+STATICFILES_STORAGE = 'mysite.s3_utils.StaticStorage'
+STATIC_URL = '/static/'
+MEDIA_URL = '/media/'
+
 DEFAULT_FILE_STORAGE = 'mysite.s3_utils.MediaStorage'
 
 if not IS_DOCKER:
