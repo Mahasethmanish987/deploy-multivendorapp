@@ -1,19 +1,19 @@
 FROM nginx:1.25-alpine
 
-# Install dependencies
+# Install dependencies (curl added for health checks)
 RUN apk update && \
     apk add --no-cache \
         certbot \
         openssl \
         tzdata \
-        curl && \  # Added curl for health checks
+        curl && \
     rm -rf /var/cache/apk/*
 
 # Remove default config
 RUN rm /etc/nginx/conf.d/default.conf
 
 # Copy custom configuration
-COPY nginx.conf /etc/nginx/nginx.conf  # Changed path to main config
+COPY nginx.conf /etc/nginx/nginx.conf
 
 # Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh
