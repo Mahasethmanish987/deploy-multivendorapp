@@ -42,25 +42,40 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-     
       - ./certbot/www:/var/www/certbot
       - ./certbot/conf:/etc/letsencrypt
-    
-    restart:  unless-stopped  
+    restart: unless-stopped
     depends_on:
       web:
         condition: service_healthy
+    # Critical addition: NGINX must serve challenge files
+    command: >
+      sh -c "echo 'Starting NGINX in temporary mode for certificate issuance';
+             nginx -g 'daemon off;'"
 
   certbot:
-    image:  certbot/certbot
+    image: certbot/certbot
     volumes:
-     - ./certbot/www:/var/www/certbot   
-     - ./certbot/conf:/etc/letsencrypt 
-
-    command: certonly --webroot -w /var/www/certbot --email mahasethmanish63@gmail.com --agree-tos --no-eff-email -d foodonline.run.place -d www.foodonline.run.place --non-interactive --staging
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+    command: >
+      sh -c "echo 'Waiting for NGINX to be ready...';
+             sleep 15;
+             echo 'Requesting certificates...';
+             certbot certonly --webroot -w /var/www/certbot 
+             --email mahasethmanish63@gmail.com 
+             --agree-tos --no-eff-email 
+             -d foodonline.run.place 
+             -d www.foodonline.run.place 
+             --non-interactive; 
+             
+             if [ -f /etc/letsencrypt/live/foodonline.run.place/fullchain.pem ]; then
+               echo 'SUCCESS: Certificates created!';
+               exit 0;
+             else
+               echo 'ERROR: Certificate creation failed';
+               exit 1;
+             fi"
     restart: on-failure
     depends_on:
-      - nginx 
-    
-
-  
+      - nginx
