@@ -16,7 +16,7 @@ services:
       - GDAL_DATA=/usr/share/gdal
       - DJANGO_SETTINGS_MODULE=mysite.settings.settings
     healthcheck:
-      test: ["CMD","wget","--spider","http://localhost:8000/"]  
+      test: ["CMD","wget","--spider","http://web:8000/"]  
       interval: 5s
       timeout: 3s
       retries: 10
