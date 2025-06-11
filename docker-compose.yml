@@ -15,11 +15,7 @@ services:
       - DJANGO_DEBUG=False
       - GDAL_DATA=/usr/share/gdal
       - DJANGO_SETTINGS_MODULE=mysite.settings.settings
-    healthcheck:
-      test: ["CMD","wget","--spider","http://web:8000/"]  
-      interval: 5s
-      timeout: 3s
-      retries: 10
+    
       
       
     command: >
@@ -36,6 +32,7 @@ services:
 
   
 
+  
   nginx:
     build: ./nginx
     ports:
@@ -44,14 +41,36 @@ services:
     volumes:
       - ./certbot/www:/var/www/certbot
       - ./certbot/conf:/etc/letsencrypt
+    command: >
+      /bin/bash -c "
+      # Backup original config
+      cp /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.bak
+      
+      # Remove SSL directives temporarily
+      sed -i '/ssl_/d' /etc/nginx/conf.d/default.conf
+      sed -i '/listen 443/d' /etc/nginx/conf.d/default.conf
+      
+      # Start NGINX in background
+      nginx -g 'daemon off;' &
+      
+      # Wait for certificates
+      while [ ! -f /etc/letsencrypt/live/foodonline.run.place/fullchain.pem ]; do
+        echo 'Waiting for certificates...'
+        sleep 5
+      done
+      
+      # Restore original config
+      mv /etc/nginx/conf.d/default.conf.bak /etc/nginx/conf.d/default.conf
+      
+      # Reload NGINX with SSL config
+      nginx -s reload
+      
+      # Keep container running
+      wait"
     restart: unless-stopped
     depends_on:
-      web:
-        condition: service_healthy
-    # Critical addition: NGINX must serve challenge files
-    command: >
-      sh -c "echo 'Starting NGINX in temporary mode for certificate issuance';
-             nginx -g 'daemon off;'"
+      - web
+        
 
   certbot:
     image: certbot/certbot
@@ -59,23 +78,21 @@ services:
       - ./certbot/www:/var/www/certbot
       - ./certbot/conf:/etc/letsencrypt
     command: >
-      sh -c "echo 'Waiting for NGINX to be ready...';
-             sleep 15;
-             echo 'Requesting certificates...';
-             certbot certonly --webroot -w /var/www/certbot 
-             --email mahasethmanish63@gmail.com 
-             --agree-tos --no-eff-email 
-             -d foodonline.run.place 
-             -d www.foodonline.run.place 
-             --non-interactive; 
-             
-             if [ -f /etc/letsencrypt/live/foodonline.run.place/fullchain.pem ]; then
-               echo 'SUCCESS: Certificates created!';
-               exit 0;
-             else
-               echo 'ERROR: Certificate creation failed';
-               exit 1;
-             fi"
+      /bin/bash -c "
+      sleep 15
+      certbot certonly --webroot -w /var/www/certbot
+        --email mahasethmanish63@gmail.com
+        --agree-tos --no-eff-email
+        -d foodonline.run.place
+        -d www.foodonline.run.place
+        --non-interactive
+      
+      if [ -f /etc/letsencrypt/live/foodonline.run.place/fullchain.pem ]; then
+        echo 'SUCCESS: Certificates created!'
+      else
+        echo 'ERROR: Certificate creation failed' >&2
+        exit 1
+      fi"
     restart: on-failure
     depends_on:
       - nginx
