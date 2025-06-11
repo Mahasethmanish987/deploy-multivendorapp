@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 import sys
+from mysite.s3_utils import StaticStorage, MediaStorage
+import socket
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -16,7 +18,7 @@ IS_DOCKER = os.path.exists("/.dockerenv")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = ["foodonline.run.place","www.foodonline.run.place","172.31.47.230","web"]
+ALLOWED_HOSTS = ["foodonline.run.place","www.foodonline.run.place","172.31.47.230","web:8000","web"]
 
 
 # Application definition
@@ -172,16 +174,11 @@ AWS_QUERYSTRING_AUTH = False
 AWS_LOCATION = 'static'
 STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
 MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
-try:
-    from mysite.s3_utils import StaticStorage, MediaStorage
-    STATICFILES_STORAGE = 'mysite.storage.S3ManifestStaticStorage'
-    DEFAULT_FILE_STORAGE = 'mysite.s3_utils.MediaStorage'
-except ImportError as e:
-    print(f"Error importing storage classes: {e}")
-    # Fall back to default if in debug
-    if DEBUG:
-        STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
-        DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
+STATIC_ROOT=BASE_DIR/'static'
+STATICFILES_STORAGE = 'mysite.storage.S3ManifestStaticStorage'
+DEFAULT_FILE_STORAGE = 'mysite.s3_utils.MediaStorage'
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 if not IS_DOCKER:
     # Windows-specific paths
@@ -201,3 +198,7 @@ CELERY_TIMEZONE = "Asia/Kathmandu"
 CELERY_RESULT_EXTENDED = True
 CELERY_ENABLE_UTC = True
 GOOGLE_API_KEY=os.environ.get('GOOGLE_API_KEY')
+
+
+if socket.gethostname() == 'web':  # Your container hostname
+    SECURE_SSL_REDIRECT = False
