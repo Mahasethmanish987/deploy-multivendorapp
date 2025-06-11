@@ -15,6 +15,11 @@ services:
       - DJANGO_DEBUG=False
       - GDAL_DATA=/usr/share/gdal
       - DJANGO_SETTINGS_MODULE=mysite.settings.settings
+    healthcheck:
+      test: ["CMD","wget","--spider","http://localhost:8000/"]  
+      interval: 5s
+      timeout: 3s
+      retries: 10
       
       
     command: >
@@ -43,7 +48,8 @@ services:
     
     restart:  unless-stopped  
     depends_on:
-      - web
+      web:
+        condition: service_healthy
 
   certbot:
     image:  certbot/certbot
@@ -51,8 +57,8 @@ services:
      - ./certbot/www:/var/www/certbot   
      - ./certbot/conf:/etc/letsencrypt 
 
-    command: certonly --webroot -w /var/www/certbot --email mahasethmanish63@gmail.com --agree-tos --no-eff-email -d foodonline.run.place -d www.foodonline.run.place --non-interactive
-    restart: unless-stopped
+    command: certonly --webroot -w /var/www/certbot --email mahasethmanish63@gmail.com --agree-tos --no-eff-email -d foodonline.run.place -d www.foodonline.run.place --non-interactive --staging
+    restart: on-failure
     depends_on:
       - nginx 
     
