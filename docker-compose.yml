@@ -41,12 +41,12 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - certbot-certs:/etc/letsencrypt
-      - certbot-www:/var/www/certbot
-    
+      - certbot_www:/var/www/certbot
+      - certbot_conf:/etc/letsencrypt
      
     depends_on:
       - web
+      - certbot
     
     
         
@@ -58,23 +58,10 @@ services:
       - nginx
         
     volumes:
-      - certbot-certs:/etc/letsencrypt
-      - certbot-www:/var/www/certbot
-    entrypoint: ""  # Clear default entrypoint
-    command: 
-      - sh
-      - -c
-      - |
-        sleep 10
-        certbot certonly --webroot -w /var/www/certbot \
-          -d foodonline.run.place \
-          -d www.foodonline.run.place \
-          --email mahasethmanish63@gmail.com \
-          --agree-tos \
-          --no-eff-email \
-          --non-interactive \
-          --force-renewal
+      - certbot_www:/var/www/certbot
+      - certbot_conf:/etc/letsencrypt
+    command: certonly --webroot -w /var/www/certbot -d foodonline.run.place -d www.foodonline.run.place --email mahasethmanish63@gmail.com --non-interactive --agree-tos --keep-until-expiring
 
 volumes:
-  certbot-certs:
-  certbot-www:
+  certbot_www:
+  certbot_conf:
