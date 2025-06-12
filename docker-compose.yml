@@ -43,14 +43,27 @@ services:
     volumes:
       - certbot-certs:/etc/letsencrypt
       - certbot-www:/var/www/certbot
+    command: >
+      sh -c "
+      # Start with temporary HTTP-only config
+      echo 'Starting Nginx in HTTP mode...'
+      nginx -g 'daemon on;'
+      
+      # Wait for Certbot to finish
+      while [ ! -f /etc/letsencrypt/live/foodonline.run.place/fullchain.pem ]; do
+        echo 'Waiting for SSL certificates...'
+        sleep 5
+      done
+      
+      # Switch to HTTPS config
+      echo 'Switching to HTTPS configuration'
+      nginx -s quit
+      nginx -g 'daemon off;'
+      "  
     depends_on:
       - web
     
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
+    
         
 
   certbot:
@@ -63,13 +76,20 @@ services:
       - certbot-certs:/etc/letsencrypt
       - certbot-www:/var/www/certbot
     command: >
-      sh -c "echo 'Waiting for Nginx to be fully ready...';
-      sleep 10;
-      certbot certonly --webroot -w /var/www/certbot
-      -d foodonline.run.place -d www.foodonline.run.place
-      --email mahasethmanish63@gmail.com
-      --agree-tos --non-interactive --force-renewal;
-      echo 'Certbot setup complete'"
+      sh -c "
+      echo 'Waiting for Nginx to be ready...'
+      sleep 10
+      echo 'Requesting SSL certificates...'
+      certbot certonly --webroot -w /var/www/certbot 
+        -d foodonline.run.place 
+        -d www.foodonline.run.place 
+        --email mahasethmanish63@gmail.com 
+        --agree-tos 
+        --non-interactive 
+        --force-renewal
+      echo 'Certificates created!'
+      " 
+      
 
 volumes:
   certbot-certs:
