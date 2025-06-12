@@ -35,64 +35,42 @@ services:
   
   nginx:
     build: ./nginx
+    container_name: nginx
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./certbot/www:/var/www/certbot
-      - ./certbot/conf:/etc/letsencrypt
-    command: >
-      /bin/bash -c "
-      # Backup original config
-      cp /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.bak
-      
-      # Remove SSL directives temporarily
-      sed -i '/ssl_/d' /etc/nginx/conf.d/default.conf
-      sed -i '/listen 443/d' /etc/nginx/conf.d/default.conf
-      
-      # Start NGINX in background
-      nginx -g 'daemon off;' &
-      
-      # Wait for certificates
-      while [ ! -f /etc/letsencrypt/live/foodonline.run.place/fullchain.pem ]; do
-        echo 'Waiting for certificates...'
-        sleep 5
-      done
-      
-      # Restore original config
-      mv /etc/nginx/conf.d/default.conf.bak /etc/nginx/conf.d/default.conf
-      
-      # Reload NGINX with SSL config
-      nginx -s reload
-      
-      # Keep container running
-      wait"
-    restart: unless-stopped
+      - certbot-certs:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
     depends_on:
       - web
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
         
 
   certbot:
-    image: certbot/certbot
-    volumes:
-      - ./certbot/www:/var/www/certbot
-      - ./certbot/conf:/etc/letsencrypt
-    command: >
-      /bin/bash -c "
-      sleep 15
-      certbot certonly --webroot -w /var/www/certbot
-        --email mahasethmanish63@gmail.com
-        --agree-tos --no-eff-email
-        -d foodonline.run.place
-        -d www.foodonline.run.place
-        --non-interactive
-      
-      if [ -f /etc/letsencrypt/live/foodonline.run.place/fullchain.pem ]; then
-        echo 'SUCCESS: Certificates created!'
-      else
-        echo 'ERROR: Certificate creation failed' >&2
-        exit 1
-      fi"
-    restart: on-failure
+    image: certbot/certbot:latest
+    container_name: certbot
     depends_on:
-      - nginx
+      nginx:
+        condition: service_healthy
+    volumes:
+      - certbot-certs:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    command: >
+      sh -c "echo 'Waiting for Nginx to be fully ready...';
+      sleep 10;
+      certbot certonly --webroot -w /var/www/certbot
+      -d foodonline.run.place -d www.foodonline.run.place
+      --email mahasethmanish63@gmail.com
+      --agree-tos --non-interactive --force-renewal;
+      echo 'Certbot setup complete'"
+
+volumes:
+  certbot-certs:
+  certbot-www:
