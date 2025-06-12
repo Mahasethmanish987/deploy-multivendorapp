@@ -43,18 +43,7 @@ services:
     volumes:
       - certbot-certs:/etc/letsencrypt
       - certbot-www:/var/www/certbot
-    command: >
-      sh -c "
-      echo 'Starting Nginx in HTTP mode...'
-      nginx -g 'daemon on;'
-      while [ ! -f /etc/letsencrypt/live/foodonline.run.place/fullchain.pem ]; do
-      echo 'Waiting for SSL certificates...'
-      sleep 5
-      done
-      echo 'Switching to HTTPS configuration'
-      nginx -s quit
-      nginx -g 'daemon off;'
-      "
+    
      
     depends_on:
       - web
