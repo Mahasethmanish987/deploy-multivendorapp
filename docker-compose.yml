@@ -60,11 +60,16 @@ services:
     volumes:
       - certbot-certs:/etc/letsencrypt
       - certbot-www:/var/www/certbot
-    entrypoint: >
-      sh -c "certbot certonly --webroot --webroot-path=/var/www/certbot
-      -d foodonline.run.place -d www.foodonline.run.place
-      --email mahasethmanish63@gmail.com --agree-tos --no-eff-email"
-
+    command: >
+      sh -c "sleep 10 && 
+      certbot certonly --webroot -w /var/www/certbot 
+      -d foodonline.run.place 
+      -d www.foodonline.run.place 
+      --email mahasethmanish63@gmail.com 
+      --agree-tos 
+      --no-eff-email 
+      --non-interactive 
+      --force-renewal"
 volumes:
   certbot-certs:
   certbot-www:
