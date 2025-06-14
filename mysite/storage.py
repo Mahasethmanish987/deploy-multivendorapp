@@ -7,7 +7,8 @@ class MediaStorage(S3Boto3Storage):
     location='media'
 
 
-class StaticStorage(S3StaticStorage):
+class StaticStorage(S3Boto3Storage):
+   location='static'
    default_acl='public-read'
    file_overwite=False 
-   location='static'
+   
