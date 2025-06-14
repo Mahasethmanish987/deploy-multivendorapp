@@ -1,5 +1,13 @@
-from django.core.files.storage import get_storage_class
-from django.contrib.staticfiles.storage import ManifestFilesMixin
+from django.conf import settings
+from storages.backends.s3boto3 import S3Boto3Storage,S3StaticStorage 
 
-class S3ManifestStaticStorage(ManifestFilesMixin, get_storage_class('mysite.s3_utils.StaticStorage')):
-    pass
+class MediaStorage(S3Boto3Storage):
+    default_acl='private'
+    file_overwrite=False 
+    location='media'
+
+
+class StaticStorage(S3StaticStorage):
+   default_acl='public-read'
+   file_overwite=False 
+   location='static'

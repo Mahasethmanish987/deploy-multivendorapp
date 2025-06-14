@@ -29,7 +29,7 @@ AWS_STORAGE_BUCKET_NAME=os.environ.get('AWS_STORAGE_BUCKET_NAME')
 AWS_S3_REGION_NAME=os.environ.get('AWS_S3_REGION_NAME')
 AWS_S3_CUSTOM_DOMAIN=f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
 AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
-
+AWS_DEFAULT_ACL = None
 print('hlw wdsdodrld')
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -160,8 +160,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-print('')
-print('')
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_HOST_USER = "mahasethmanish63@gmail.com"
@@ -172,13 +171,13 @@ DEFAULT_FROM_EMAIL = "mahasethmanish63@gmail.com"
 
 
 
-STATICFILES_STORAGE='storages.backends.s3boto3.S3StaticStorage'
-STATIC_URL=f'https://{AWS_S3_CUSTOM_DOMAIN}/static'
+STATICFILES_STORAGE='mysite.storage.StaticStorage'
+STATIC_URL=f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
 
-DEFAULT_FILE_STORAGE='storages.backends.s3boto3.S3Boto3Storage'
+DEFAULT_FILE_STORAGE='mysite.storage.MediaStorage'
 MEDIA_URL=f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
 
-AWS_DEFAULT_ACL=None 
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 if not IS_DOCKER:
     # Windows-specific paths
