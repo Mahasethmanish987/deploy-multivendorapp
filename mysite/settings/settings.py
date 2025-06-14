@@ -200,3 +200,16 @@ CELERY_TIMEZONE = "Asia/Kathmandu"
 CELERY_RESULT_EXTENDED = True
 CELERY_ENABLE_UTC = True
 GOOGLE_API_KEY=os.environ.get('GOOGLE_API_KEY')
+
+
+LOGGING = {
+    'version': 1,
+    'handlers': {
+        'console': {'class': 'logging.StreamHandler'}
+    },
+    'loggers': {
+        'django': {'level': 'DEBUG', 'handlers': ['console']},
+        'boto3': {'level': 'DEBUG', 'handlers': ['console']},
+        'botocore': {'level': 'DEBUG', 'handlers': ['console']}
+    }
+}

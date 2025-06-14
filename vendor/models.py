@@ -8,13 +8,20 @@ from datetime import time ,datetime , date
 
 # Create your models here.
 
+from storages.backends.s3boto3 import S3Boto3Storage
+
+
+class VendorLicenseStorage(S3Boto3Storage):
+    location = 'vendor/licenses'
+    file_overwrite = False  # Prevent overwriting files
+    default_acl = 'private'
 
 class Vendor(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE,related_name='vendor_account')
     user_profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE,related_name='vendor_profile')
     vendor_name = models.CharField(max_length=50)
     vendor_slug = models.SlugField(unique=True)
-    vendor_license = models.ImageField(upload_to="vendor/license")
+    vendor_license = models.ImageField(upload_to="",storage=VendorLicenseStorage())
     is_approved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
