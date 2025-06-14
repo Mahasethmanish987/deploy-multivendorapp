@@ -185,7 +185,7 @@ if not IS_DOCKER:
         r"C:\Users\mahas\Desktop\multivendor8\venv\Lib\site-packages\osgeo\gdal308.dll"
     )
 
-CELERY_BROKER_URL = "redis://redis:6379/0"
+CELERY_BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
 CELERY_RESULT_BACKEND = "django-db"
 CELERY_TIMEZONE = "Asia/Kathmandu"
 CELERY_RESULT_EXTENDED = True
