@@ -171,13 +171,15 @@ DEFAULT_FROM_EMAIL = "mahasethmanish63@gmail.com"
 
 
 
-STATICFILES_STORAGE='mysite.storage.StaticStorage'
+STATICFILES_STORAGE='storages.backends.s3boto3.S3Boto3Storage'
 STATIC_URL=f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
 
-DEFAULT_FILE_STORAGE='mysite.storage.MediaStorage'
+DEFAULT_FILE_STORAGE='storages.backends.s3boto3.S3Boto3Storage'
 MEDIA_URL=f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = '/tmp/static'
+AWS_DEFAULT_ACL = None
+AWS_QUERYSTRING_AUTH = False
 
 if not IS_DOCKER:
     # Windows-specific paths
