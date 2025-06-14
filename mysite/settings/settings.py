@@ -169,16 +169,16 @@ EMAIL_HOST_PASSWORD = "yiqm ovye fhcv cnsb"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = "mahasethmanish63@gmail.com"
-AWS_DEFAULT_ACL = None
-AWS_QUERYSTRING_AUTH = False
-AWS_LOCATION = 'static'
-STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
-MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
 
-STATIC_ROOT=BASE_DIR/'static'
-STATICFILES_STORAGE = 'mysite.storage.S3ManifestStaticStorage'
-DEFAULT_FILE_STORAGE = 'mysite.s3_utils.MediaStorage'
-DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
+
+STATICFILES_STORAGE='storages.backends.s3boto3.S3StaticStorage'
+STATIC_URL=f'https://{AWS_S3_CUSTOM_DOMAIN}/static'
+
+DEFAULT_FILE_STORAGE='storages.backends.s3boto3.S3Boto3Storage'
+MEDIA_URL=f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
+
+AWS_DEFAULT_ACL=None 
 
 if not IS_DOCKER:
     # Windows-specific paths
@@ -198,7 +198,3 @@ CELERY_TIMEZONE = "Asia/Kathmandu"
 CELERY_RESULT_EXTENDED = True
 CELERY_ENABLE_UTC = True
 GOOGLE_API_KEY=os.environ.get('GOOGLE_API_KEY')
-
-
-if socket.gethostname() == 'web':  # Your container hostname
-    SECURE_SSL_REDIRECT = False

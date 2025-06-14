@@ -35,15 +35,12 @@ services:
   
   nginx:
     build: ./nginx
-    container_name: nginx
-    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - certbot_www:/var/www/certbot
-      - certbot_conf:/etc/letsencrypt
-     
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
     depends_on:
       - web
       
@@ -53,15 +50,23 @@ services:
 
   certbot:
     image: certbot/certbot:latest
-    container_name: certbot
+    volumes:
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+    command: 
+      - "certonly"
+      - "--webroot"
+      - "-w"
+      - "/var/www/certbot"
+      - "-d"
+      - "foodonline.run.place"
+      - "-d"
+      - "www.foodonline.run.place"
+      - "--email"
+      - "mahasethmanish63@gmail.com"
+      - "--non-interactive"
+      - "--agree-tos"
+      - "--keep-until-expiring"
     depends_on:
       - nginx
-        
-    volumes:
-      - certbot_www:/var/www/certbot
-      - certbot_conf:/etc/letsencrypt
-    command: certonly --webroot -w /var/www/certbot -d foodonline.run.place -d www.foodonline.run.place --email mahasethmanish63@gmail.com --non-interactive --agree-tos --keep-until-expiring
 
-volumes:
-  certbot_www:
-  certbot_conf:
