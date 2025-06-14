@@ -3,8 +3,8 @@
   src:  url('/static/fonts/icomoon.eot?wzp9o1');
   src:  url('/static/fonts/icomoon.eot?wzp9o1#iefix') format('embedded-opentype'),
     url('/static/fonts/icomoon.ttf?wzp9o1') format('truetype'),
-    url('/static/fonts/icomoon.woff?wzp9o1') format('woff'),
-    url('/static/fonts/icomoon.svg?wzp9o1#icomoon') format('svg');
+    url('static/fonts/icomoon.woff?wzp9o1') format('woff'),
+    url('static/fonts/icomoon.svg?wzp9o1#icomoon') format('svg');
   font-weight: normal;
   font-style: normal;
 }
