@@ -65,7 +65,7 @@
         (function (orderId, foodId) {
             // Create WebSocket connection
             const socket = new WebSocket(
-                `ws://foodonline.run.place/ws/order/${foodId}/`
+                `wss://foodonline.run.place/ws/order/${foodId}/`
             );
 
             // Store socket reference
@@ -140,7 +140,8 @@
                     method: 'POST',
                     body: formData,
                     headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        
                     }
                 })
                     .then(response => response.json())

@@ -261,7 +261,7 @@ def update_order_status(request):
             ordered_food = OrderedFood.objects.get(id=ordered_id)
 
         except OrderedFood.DoesNotExist:
-            return JsonResponse({"success": False, "message": "Invalid item"})
+            return JsonResponse({"success": False, "message": "Invalid asdfasdfitem"})
 
         ordered_food.status = new_status
         if ordered_food.status == "completed":

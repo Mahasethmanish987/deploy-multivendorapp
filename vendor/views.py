@@ -53,7 +53,7 @@ def checkCustomer(user):
 @login_required(login_url="accounts:login")
 @user_passes_test(checkVendor)
 def vendorDashboard(request):
-    orderedfood=OrderedFood.objects.filter(fooditem__vendor=getVendor(request),status='pending')
+    orderedfood=OrderedFood.objects.filter(fooditem__vendor=getVendor(request),status__in=['pending','accepted'])
     context={
         'ordered_food':orderedfood
     }
