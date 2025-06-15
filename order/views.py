@@ -276,7 +276,7 @@ def update_order_status(request):
             f"order_{ordered_food.id}",
             {"type": "order_update", "food_id": ordered_food.id, "status": new_status},
         )
-        # return JsonResponse({"success": True, "message": "Invalid item"})
+        return JsonResponse({"success": True, "message": "Invalid item"})
 
 
 def download_pdf(request, order_number):
