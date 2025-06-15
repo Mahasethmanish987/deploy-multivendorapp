@@ -16,7 +16,7 @@ class Command(BaseCommand):
 
         for order in active_orders: 
             if order.is_expired():
-                response=requests.post("https://172.31.47.230:8000/order/server-update-order-status",data={'food_id':order.id,'status':'cancelled'})            
+                response=requests.post("http://172.31.47.230:8000/order/server-update-order-status",data={'food_id':order.id,'status':'cancelled'})            
                 
                 continue 
             
