@@ -143,18 +143,6 @@ SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 
 # Production security settings
-server_ip = socket.gethostbyname(socket.gethostname())
-if not DEBUG:
-    if server_ip == '172.31.47.230':  # 👈 YOUR SERVER'S PRIVATE IP
-        SECURE_SSL_REDIRECT = False   # Turn OFF HTTPS redirect
-    else:
-        SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 
