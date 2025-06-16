@@ -143,6 +143,20 @@ SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 
 # Production security settings
+# ADD THESE LINES TO settings.py
+
+# 1. Tell Django to trust your domain
+CSRF_TRUSTED_ORIGINS = [
+    'https://foodonline.run.place',
+    'https://www.foodonline.run.place'  # Add if you use www version
+]
+
+# 2. Make Django understand it's behind HTTPS proxy
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# 3. Keep security ON (important!)
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
 
 
