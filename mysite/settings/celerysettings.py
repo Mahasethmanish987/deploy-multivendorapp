@@ -166,6 +166,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = "mahasethmanish63@gmail.com"
 
+
 STATIC_ROOT = BASE_DIR/'static_collection'
 STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
 STATICFILES_STORAGE = 'mysite.s3_utils.StaticStorage'

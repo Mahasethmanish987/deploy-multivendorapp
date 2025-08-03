@@ -4,6 +4,7 @@ from django.contrib.gis.geos import Point
 from django.db import models
 from storages.backends.s3boto3 import S3Boto3Storage
 
+
 class UserManager(BaseUserManager):
     def create_user(
         self, first_name, last_name, phone_number, username, email, password=None
@@ -86,19 +87,25 @@ class User(AbstractBaseUser):
         else:
             return "admin"
 
+
 class ProfileMediaStorage(S3Boto3Storage):
-    location = 'media/users/profile_picture'
-    default_acl = 'public-read'  # Public access
+    location = "media/users/profile_picture"
+    default_acl = "public-read"  # Public access
     file_overwrite = False
+
+
 class CoverMediaStorage(S3Boto3Storage):
-    location = 'media/users/cover_photo'
-    default_acl = 'public-read'  # Public access
-    file_overwrite = False    
+    location = "media/users/cover_photo"
+    default_acl = "public-read"  # Public access
+    file_overwrite = False
+
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE,related_name='user_profile')
-    profile_picture = models.ImageField(upload_to="",storage=ProfileMediaStorage())
-    cover_photo = models.ImageField(upload_to="",storage=CoverMediaStorage())
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="user_profile"
+    )
+    profile_picture = models.ImageField(upload_to="", storage=ProfileMediaStorage())
+    cover_photo = models.ImageField(upload_to="", storage=CoverMediaStorage())
     address = models.CharField(max_length=100, null=True, blank=True)
     country = models.CharField(max_length=100, null=True, blank=True)
     state = models.CharField(max_length=100, null=True, blank=True)

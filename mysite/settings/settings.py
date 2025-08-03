@@ -18,7 +18,7 @@ IS_DOCKER = os.path.exists("/.dockerenv")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = ["foodonline.run.place","www.foodonline.run.place","172.31.47.230","web:8000","web"]
+ALLOWED_HOSTS = ["foodonline.run.place","www.foodonline.run.place","172.31.40.127","web"]
 
 
 # Application definition
@@ -142,7 +142,7 @@ SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 
-# Production security settings
+# Production security settings                                                                                                                                                                                                                          
 # ADD THESE LINES TO settings.py
 
 # 1. Tell Django to trust your domain
