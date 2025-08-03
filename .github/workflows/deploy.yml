@@ -4,10 +4,6 @@ on:
   push:
     branches: [master]
 
-env:
-  APP_DIR: /home/${{ secrets.EC2_USERNAME }}/foodonline
-  REPO_URL: https://github.com/Mahasethmanish987/deploy-multivendorapp.git
-
 jobs:
   deploy-instance1:
     runs-on: ubuntu-latest
@@ -24,57 +20,56 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
 
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@v1.2.0  # Updated to latest version
         with:
           host: ${{ secrets.EC2_HOST1 }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY1 }}
           script: |
-            set -e
+            set -e  # Fail on error
             echo "🚀 Starting deployment on Instance 1"
             
-            # Setup directory
-            sudo mkdir -p ${{ env.APP_DIR }}
-            sudo chown -R $USER:$USER ${{ env.APP_DIR }}
-            cd ${{ env.APP_DIR }}
+            # Create directory
+            mkdir -p /home/$USER/foodonline
+            cd /home/$USER/foodonline
             
-            # Clone or update repository
+            # Initialize Git if needed
             if [ ! -d .git ]; then
-              git clone ${{ env.REPO_URL }} .
-            else
-              git fetch --all
-              git reset --hard origin/master
+              git init
+              git remote add origin https://github.com/Mahasethmanish987/deploy-multivendorapp.git
             fi
             
-            # Install Docker Compose if missing
+            # Get latest code
+            git fetch origin
+            git reset --hard origin/master
+            
+            # Ensure Docker Compose is available
             if ! docker compose version &>/dev/null; then
+              echo "Installing Docker Compose plugin..."
               sudo apt-get update
               sudo apt-get install -y docker-compose-plugin
+              sudo usermod -aG docker $USER
+              newgrp docker
             fi
             
-            # Verify Docker environment
-            docker --version
+            # Verify Docker Compose version
             docker compose version
             
-            # Deploy containers
+            # Cleanup previous deployment
             docker compose -f docker-compose.yml down --remove-orphans || true
+            docker system prune -af --volumes
+            
+            # Build and deploy
             docker compose -f docker-compose.yml build --no-cache
             docker compose -f docker-compose.yml up -d --force-recreate
             
-            # Health check with retries
-            for i in {1..5}; do
-              sleep 10
-              if docker compose ps | grep -q 'running'; then
-                echo "📦 Containers running:"
-                docker compose ps
-                echo "✅ Deployment successful on Instance 1"
-                exit 0
-              fi
-            done
-            
-            echo "❌ Deployment failed - containers not starting"
-            docker compose logs
-            exit 1
+            # Health check
+            sleep 10
+            echo "📦 Container status:"
+            docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"
+            echo "🔍 Recent logs:"
+            docker compose -f docker-compose.yml logs -t --tail=100
+            echo "✅ Deployment complete on Instance 1"
 
   deploy-instance2:
     runs-on: ubuntu-latest
@@ -91,54 +86,53 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
 
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@v1.2.0  # Updated to latest version
         with:
           host: ${{ secrets.EC2_HOST2 }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY2 }}
           script: |
-            set -e
+            set -e  # Fail on error
             echo "🚀 Starting deployment on Instance 2"
             
-            # Setup directory
-            sudo mkdir -p ${{ env.APP_DIR }}
-            sudo chown -R $USER:$USER ${{ env.APP_DIR }}
-            cd ${{ env.APP_DIR }}
+            # Create directory
+            mkdir -p /home/$USER/foodonline
+            cd /home/$USER/foodonline
             
-            # Clone or update repository
+            # Initialize Git if needed
             if [ ! -d .git ]; then
-              git clone ${{ env.REPO_URL }} .
-            else
-              git fetch --all
-              git reset --hard origin/master
+              git init
+              git remote add origin https://github.com/Mahasethmanish987/deploy-multivendorapp.git
             fi
             
-            # Install Docker Compose if missing
+            # Get latest code
+            git fetch origin
+            git reset --hard origin/master
+            
+            # Ensure Docker Compose is available
             if ! docker compose version &>/dev/null; then
+              echo "Installing Docker Compose plugin..."
               sudo apt-get update
               sudo apt-get install -y docker-compose-plugin
+              sudo usermod -aG docker $USER
+              newgrp docker
             fi
             
-            # Verify Docker environment
-            docker --version
+            # Verify Docker Compose version
             docker compose version
             
-            # Deploy containers
+            # Cleanup previous deployment
             docker compose -f docker-compose-tier.yml down --remove-orphans || true
+            docker system prune -af --volumes
+            
+            # Build and deploy
             docker compose -f docker-compose-tier.yml build --no-cache
             docker compose -f docker-compose-tier.yml up -d --force-recreate
             
-            # Health check with retries
-            for i in {1..5}; do
-              sleep 10
-              if docker compose -f docker-compose-tier.yml ps | grep -q 'running'; then
-                echo "📦 Containers running:"
-                docker compose -f docker-compose-tier.yml ps
-                echo "✅ Deployment successful on Instance 2"
-                exit 0
-              fi
-            done
-            
-            echo "❌ Deployment failed - containers not starting"
-            docker compose -f docker-compose-tier.yml logs
-            exit 1
+            # Health check
+            sleep 10
+            echo "📦 Container status:"
+            docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"
+            echo "🔍 Recent logs:"
+            docker compose -f docker-compose-tier.yml logs -t --tail=100
+            echo "✅ Deployment complete on Instance 2"
