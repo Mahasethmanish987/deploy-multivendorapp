@@ -14,7 +14,7 @@ IS_DOCKER = os.path.exists("/.dockerenv")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = ["172.31.36.125"]
+ALLOWED_HOSTS = ["172.31.41.212"]
 
 
 # Application definition

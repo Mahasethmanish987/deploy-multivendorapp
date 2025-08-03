@@ -16,59 +16,100 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          ssh-keyscan -H ${{ secrets.EC2_HOST1 }} >> ~/.ssh/known_hosts
+          
+          # Add retry logic for SSH keyscan
+          for i in {1..5}; do
+            ssh-keyscan -H ${{ secrets.EC2_HOST1 }} >> ~/.ssh/known_hosts 2>&1 && {
+              echo "✅ SSH keyscan succeeded on attempt $i"
+              break
+            } || {
+              echo "🔄 SSH keyscan attempt $i failed. Retrying in 3 seconds..."
+              sleep 3
+            }
+          done
+          
           chmod 600 ~/.ssh/known_hosts
+          echo "🔑 Host keys added to known_hosts"
 
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.2.0  # Updated to latest version
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST1 }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY1 }}
           script: |
-            set -e  # Fail on error
+            set -e  # Exit immediately on error
             echo "🚀 Starting deployment on Instance 1"
             
-            # Create directory
-            mkdir -p /home/$USER/foodonline
-            cd /home/$USER/foodonline
+            # Set environment variables
+            USER="${{ secrets.EC2_USERNAME }}"
+            APP_DIR="/home/$USER/foodonline"
+            REPO_URL="https://github.com/Mahasethmanish987/deploy-multivendorapp.git"
             
-            # Initialize Git if needed
+            # Create application directory
+            echo "📁 Creating directory: $APP_DIR"
+            sudo mkdir -p "$APP_DIR"
+            sudo chown -R $USER:$USER "$APP_DIR"
+            cd "$APP_DIR"
+            
+            # Initialize Git repository
             if [ ! -d .git ]; then
+              echo "🔧 Initializing Git repository"
               git init
-              git remote add origin https://github.com/Mahasethmanish987/deploy-multivendorapp.git
+              git remote add origin "$REPO_URL"
             fi
             
-            # Get latest code
+            # Fetch latest code
+            echo "⬇️ Fetching latest code from repository"
             git fetch origin
             git reset --hard origin/master
             
-            # Ensure Docker Compose is available
+            # Install Docker Compose if missing
             if ! docker compose version &>/dev/null; then
-              echo "Installing Docker Compose plugin..."
+              echo "🐳 Installing Docker Compose plugin"
               sudo apt-get update
               sudo apt-get install -y docker-compose-plugin
-              sudo usermod -aG docker $USER
-              newgrp docker
+              
+              # Add user to docker group
+              if ! groups $USER | grep -q '\bdocker\b'; then
+                echo "👤 Adding user to docker group"
+                sudo usermod -aG docker $USER
+              fi
             fi
             
-            # Verify Docker Compose version
+            # Verify Docker environment
+            echo "🔍 Docker environment:"
+            docker --version
             docker compose version
             
-            # Cleanup previous deployment
+            # Stop and cleanup previous deployment
+            echo "🧹 Cleaning up previous deployment"
             docker compose -f docker-compose.yml down --remove-orphans || true
-            docker system prune -af --volumes
             
-            # Build and deploy
+            # Build and start new containers
+            echo "🏗️ Building and starting containers"
             docker compose -f docker-compose.yml build --no-cache
             docker compose -f docker-compose.yml up -d --force-recreate
             
-            # Health check
-            sleep 10
+            # Health check with retries
+            echo "🩺 Performing health check"
+            for i in {1..5}; do
+              sleep 10
+              if docker compose ps | grep -q 'running'; then
+                echo "✅ Containers are running"
+                break
+              else
+                echo "🔄 Containers not ready yet (attempt $i/5)"
+              fi
+            done
+            
+            # Show deployment status
             echo "📦 Container status:"
-            docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"
-            echo "🔍 Recent logs:"
-            docker compose -f docker-compose.yml logs -t --tail=100
+            docker compose ps
+            
+            echo "📜 Recent logs:"
+            docker compose logs -t --tail=50
+            
             echo "✅ Deployment complete on Instance 1"
 
   deploy-instance2:
@@ -82,57 +123,98 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          ssh-keyscan -H ${{ secrets.EC2_HOST2 }} >> ~/.ssh/known_hosts
+          
+          # Add retry logic for SSH keyscan
+          for i in {1..5}; do
+            ssh-keyscan -H ${{ secrets.EC2_HOST2 }} >> ~/.ssh/known_hosts 2>&1 && {
+              echo "✅ SSH keyscan succeeded on attempt $i"
+              break
+            } || {
+              echo "🔄 SSH keyscan attempt $i failed. Retrying in 3 seconds..."
+              sleep 3
+            }
+          done
+          
           chmod 600 ~/.ssh/known_hosts
+          echo "🔑 Host keys added to known_hosts"
 
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.2.0  # Updated to latest version
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST2 }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY2 }}
           script: |
-            set -e  # Fail on error
+            set -e  # Exit immediately on error
             echo "🚀 Starting deployment on Instance 2"
             
-            # Create directory
-            mkdir -p /home/$USER/foodonline
-            cd /home/$USER/foodonline
+            # Set environment variables
+            USER="${{ secrets.EC2_USERNAME }}"
+            APP_DIR="/home/$USER/foodonline"
+            REPO_URL="https://github.com/Mahasethmanish987/deploy-multivendorapp.git"
             
-            # Initialize Git if needed
+            # Create application directory
+            echo "📁 Creating directory: $APP_DIR"
+            sudo mkdir -p "$APP_DIR"
+            sudo chown -R $USER:$USER "$APP_DIR"
+            cd "$APP_DIR"
+            
+            # Initialize Git repository
             if [ ! -d .git ]; then
+              echo "🔧 Initializing Git repository"
               git init
-              git remote add origin https://github.com/Mahasethmanish987/deploy-multivendorapp.git
+              git remote add origin "$REPO_URL"
             fi
             
-            # Get latest code
+            # Fetch latest code
+            echo "⬇️ Fetching latest code from repository"
             git fetch origin
             git reset --hard origin/master
             
-            # Ensure Docker Compose is available
+            # Install Docker Compose if missing
             if ! docker compose version &>/dev/null; then
-              echo "Installing Docker Compose plugin..."
+              echo "🐳 Installing Docker Compose plugin"
               sudo apt-get update
               sudo apt-get install -y docker-compose-plugin
-              sudo usermod -aG docker $USER
-              newgrp docker
+              
+              # Add user to docker group
+              if ! groups $USER | grep -q '\bdocker\b'; then
+                echo "👤 Adding user to docker group"
+                sudo usermod -aG docker $USER
+              fi
             fi
             
-            # Verify Docker Compose version
+            # Verify Docker environment
+            echo "🔍 Docker environment:"
+            docker --version
             docker compose version
             
-            # Cleanup previous deployment
+            # Stop and cleanup previous deployment
+            echo "🧹 Cleaning up previous deployment"
             docker compose -f docker-compose-tier.yml down --remove-orphans || true
-            docker system prune -af --volumes
             
-            # Build and deploy
+            # Build and start new containers
+            echo "🏗️ Building and starting containers"
             docker compose -f docker-compose-tier.yml build --no-cache
             docker compose -f docker-compose-tier.yml up -d --force-recreate
             
-            # Health check
-            sleep 10
+            # Health check with retries
+            echo "🩺 Performing health check"
+            for i in {1..5}; do
+              sleep 10
+              if docker compose -f docker-compose-tier.yml ps | grep -q 'running'; then
+                echo "✅ Containers are running"
+                break
+              else
+                echo "🔄 Containers not ready yet (attempt $i/5)"
+              fi
+            done
+            
+            # Show deployment status
             echo "📦 Container status:"
-            docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"
-            echo "🔍 Recent logs:"
-            docker compose -f docker-compose-tier.yml logs -t --tail=100
+            docker compose -f docker-compose-tier.yml ps
+            
+            echo "📜 Recent logs:"
+            docker compose -f docker-compose-tier.yml logs -t --tail=50
+            
             echo "✅ Deployment complete on Instance 2"
