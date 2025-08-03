@@ -38,16 +38,15 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY1 }}
           script: |
-            set -e  # Exit immediately on error
+            set -e
             echo "🚀 Starting deployment on Instance 1"
             
             # Set environment variables
             USER="${{ secrets.EC2_USERNAME }}"
             APP_DIR="/home/$USER/foodonline"
-            REPO_URL="https://github.com/Mahasethmanish987/deploy-multivendorapp.git"
             
             # Create application directory
-            echo "📁 Creating directory: $APP_DIR"
+            echo "📁 Using directory: $APP_DIR"
             sudo mkdir -p "$APP_DIR"
             sudo chown -R $USER:$USER "$APP_DIR"
             cd "$APP_DIR"
@@ -55,8 +54,9 @@ jobs:
             # Initialize Git repository
             if [ ! -d .git ]; then
               echo "🔧 Initializing Git repository"
+              git config --global init.defaultBranch master
               git init
-              git remote add origin "$REPO_URL"
+              git remote add origin https://github.com/Mahasethmanish987/deploy-multivendorapp.git
             fi
             
             # Fetch latest code
@@ -64,17 +64,22 @@ jobs:
             git fetch origin
             git reset --hard origin/master
             
-            # Install Docker Compose if missing
-            if ! docker compose version &>/dev/null; then
-              echo "🐳 Installing Docker Compose plugin"
-              sudo apt-get update
-              sudo apt-get install -y docker-compose-plugin
+            # Start Docker service if not running
+            if ! sudo systemctl is-active --quiet docker; then
+              echo "🐳 Starting Docker service..."
+              sudo systemctl start docker
+              sudo systemctl enable docker
+              sleep 5  # Wait for Docker to start
+            fi
+            
+            # Add user to docker group if needed
+            if ! groups $USER | grep -q '\bdocker\b'; then
+              echo "👤 Adding user to docker group..."
+              sudo usermod -aG docker $USER
               
-              # Add user to docker group
-              if ! groups $USER | grep -q '\bdocker\b'; then
-                echo "👤 Adding user to docker group"
-                sudo usermod -aG docker $USER
-              fi
+              # Re-execute script with new group permissions
+              echo "🔄 Re-running script with new group permissions"
+              exec sg docker -c "$0"
             fi
             
             # Verify Docker environment
@@ -82,7 +87,7 @@ jobs:
             docker --version
             docker compose version
             
-            # Stop and cleanup previous deployment
+            # Cleanup previous deployment
             echo "🧹 Cleaning up previous deployment"
             docker compose -f docker-compose.yml down --remove-orphans || true
             
@@ -95,17 +100,19 @@ jobs:
             echo "🩺 Performing health check"
             for i in {1..5}; do
               sleep 10
-              if docker compose ps | grep -q 'running'; then
-                echo "✅ Containers are running"
+              CONTAINERS_RUNNING=$(docker compose ps -q | wc -l)
+              if [ "$CONTAINERS_RUNNING" -gt 0 ] && docker compose ps | grep -q 'Up (healthy)'; then
+                echo "✅ Containers are running and healthy"
                 break
               else
                 echo "🔄 Containers not ready yet (attempt $i/5)"
+                docker compose ps
               fi
             done
             
             # Show deployment status
             echo "📦 Container status:"
-            docker compose ps
+            docker compose ps -a
             
             echo "📜 Recent logs:"
             docker compose logs -t --tail=50
@@ -145,16 +152,15 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY2 }}
           script: |
-            set -e  # Exit immediately on error
+            set -e
             echo "🚀 Starting deployment on Instance 2"
             
             # Set environment variables
             USER="${{ secrets.EC2_USERNAME }}"
             APP_DIR="/home/$USER/foodonline"
-            REPO_URL="https://github.com/Mahasethmanish987/deploy-multivendorapp.git"
             
             # Create application directory
-            echo "📁 Creating directory: $APP_DIR"
+            echo "📁 Using directory: $APP_DIR"
             sudo mkdir -p "$APP_DIR"
             sudo chown -R $USER:$USER "$APP_DIR"
             cd "$APP_DIR"
@@ -162,8 +168,9 @@ jobs:
             # Initialize Git repository
             if [ ! -d .git ]; then
               echo "🔧 Initializing Git repository"
+              git config --global init.defaultBranch master
               git init
-              git remote add origin "$REPO_URL"
+              git remote add origin https://github.com/Mahasethmanish987/deploy-multivendorapp.git
             fi
             
             # Fetch latest code
@@ -171,17 +178,22 @@ jobs:
             git fetch origin
             git reset --hard origin/master
             
-            # Install Docker Compose if missing
-            if ! docker compose version &>/dev/null; then
-              echo "🐳 Installing Docker Compose plugin"
-              sudo apt-get update
-              sudo apt-get install -y docker-compose-plugin
+            # Start Docker service if not running
+            if ! sudo systemctl is-active --quiet docker; then
+              echo "🐳 Starting Docker service..."
+              sudo systemctl start docker
+              sudo systemctl enable docker
+              sleep 5  # Wait for Docker to start
+            fi
+            
+            # Add user to docker group if needed
+            if ! groups $USER | grep -q '\bdocker\b'; then
+              echo "👤 Adding user to docker group..."
+              sudo usermod -aG docker $USER
               
-              # Add user to docker group
-              if ! groups $USER | grep -q '\bdocker\b'; then
-                echo "👤 Adding user to docker group"
-                sudo usermod -aG docker $USER
-              fi
+              # Re-execute script with new group permissions
+              echo "🔄 Re-running script with new group permissions"
+              exec sg docker -c "$0"
             fi
             
             # Verify Docker environment
@@ -189,7 +201,7 @@ jobs:
             docker --version
             docker compose version
             
-            # Stop and cleanup previous deployment
+            # Cleanup previous deployment
             echo "🧹 Cleaning up previous deployment"
             docker compose -f docker-compose-tier.yml down --remove-orphans || true
             
@@ -202,17 +214,19 @@ jobs:
             echo "🩺 Performing health check"
             for i in {1..5}; do
               sleep 10
-              if docker compose -f docker-compose-tier.yml ps | grep -q 'running'; then
-                echo "✅ Containers are running"
+              CONTAINERS_RUNNING=$(docker compose -f docker-compose-tier.yml ps -q | wc -l)
+              if [ "$CONTAINERS_RUNNING" -gt 0 ] && docker compose -f docker-compose-tier.yml ps | grep -q 'Up (healthy)'; then
+                echo "✅ Containers are running and healthy"
                 break
               else
                 echo "🔄 Containers not ready yet (attempt $i/5)"
+                docker compose -f docker-compose-tier.yml ps
               fi
             done
             
             # Show deployment status
             echo "📦 Container status:"
-            docker compose -f docker-compose-tier.yml ps
+            docker compose -f docker-compose-tier.yml ps -a
             
             echo "📜 Recent logs:"
             docker compose -f docker-compose-tier.yml logs -t --tail=50
