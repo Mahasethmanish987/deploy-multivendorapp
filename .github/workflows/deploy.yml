@@ -8,6 +8,9 @@ jobs:
   deploy-instance1:
     runs-on: ubuntu-latest
     name: Deploy to Instance 1
+    # Request disk space to prevent CI errors
+    with:
+      disk: 10GB
     steps:
       - name: Checkout code 
         uses: actions/checkout@v4
@@ -49,7 +52,7 @@ jobs:
             
             # Repository setup
             if [ ! -d .git ]; then
-              git init
+              git init -q
               git remote add origin https://github.com/Mahasethmanish987/deploy-multivendorapp.git
             fi
             
@@ -62,7 +65,7 @@ jobs:
             echo "🐳 Verifying Docker environment"
             if ! command -v docker &> /dev/null; then
               echo "Installing Docker..."
-              sudo apt-get update
+              sudo apt-get update -qq
               sudo apt-get install -y docker.io
             fi
             
@@ -79,9 +82,22 @@ jobs:
             
             # Add user to docker group
             if ! groups $USER | grep -q '\bdocker\b'; then
+              echo "👥 Adding user to docker group"
               sudo usermod -aG docker $USER
-              exec sg docker -c "$0"
+              # Activate group without restarting session
+              exec sg docker -c "$0 $@" || true
             fi
+            
+            # Disk space management
+            echo "🧹 Cleaning up disk space before build"
+            sudo df -h /
+            sudo apt-get clean -y || true
+            sudo docker system prune -af || true
+            sudo docker volume prune -f || true
+            sudo rm -rf /var/lib/apt/lists/* || true
+            sudo rm -rf /tmp/* || true
+            sudo find /var/log -type f -exec truncate -s 0 {} \; || true
+            sudo df -h /
             
             # Deploy application
             echo "🏗️ Building and starting containers"
@@ -89,18 +105,31 @@ jobs:
             docker-compose build --no-cache
             docker-compose up -d --force-recreate
             
-            # Health check
-            echo "🩺 Starting health checks"
+            # Health check with diagnostics
+            echo "🩺 Starting health checks (15s intervals)"
+            HEALTHY=false
             for i in {1..10}; do
-              sleep 10
-              if docker-compose ps | grep -q '(healthy)'; then
+              sleep 15
+              CONTAINER_STATUS=$(docker-compose ps)
+              echo "📊 Container status (attempt $i/10):"
+              echo "$CONTAINER_STATUS"
+              
+              if echo "$CONTAINER_STATUS" | grep -q '(healthy)'; then
                 echo "✅ Services are healthy"
+                HEALTHY=true
                 break
-              else
-                echo "⏳ Waiting for services to become healthy (attempt $i/10)"
-                docker-compose ps
               fi
             done
+            
+            if [ "$HEALTHY" = false ]; then
+              echo "❌ Services failed to become healthy"
+              echo "📜 Displaying container logs:"
+              docker-compose logs --tail=100 || true
+              echo "🔍 Service diagnostics:"
+              docker-compose ps -a || true
+              docker stats --no-stream || true
+              exit 1
+            fi
             
             echo "📦 Final container status:"
             docker-compose ps -a
@@ -109,6 +138,8 @@ jobs:
   deploy-instance2:
     runs-on: ubuntu-latest
     name: Deploy to Instance 2
+    with:
+      disk: 10GB
     steps:
       - name: Checkout code 
         uses: actions/checkout@v4
@@ -150,7 +181,7 @@ jobs:
             
             # Repository setup
             if [ ! -d .git ]; then
-              git init
+              git init -q
               git remote add origin https://github.com/Mahasethmanish987/deploy-multivendorapp.git
             fi
             
@@ -163,7 +194,7 @@ jobs:
             echo "🐳 Verifying Docker environment"
             if ! command -v docker &> /dev/null; then
               echo "Installing Docker..."
-              sudo apt-get update
+              sudo apt-get update -qq
               sudo apt-get install -y docker.io
             fi
             
@@ -180,28 +211,54 @@ jobs:
             
             # Add user to docker group
             if ! groups $USER | grep -q '\bdocker\b'; then
+              echo "👥 Adding user to docker group"
               sudo usermod -aG docker $USER
-              exec sg docker -c "$0"
+              # Activate group without restarting session
+              exec sg docker -c "$0 $@" || true
             fi
             
-            # Deploy application (SAME AS INSTANCE1)
+            # Disk space management
+            echo "🧹 Cleaning up disk space before build"
+            sudo df -h /
+            sudo apt-get clean -y || true
+            sudo docker system prune -af || true
+            sudo docker volume prune -f || true
+            sudo rm -rf /var/lib/apt/lists/* || true
+            sudo rm -rf /tmp/* || true
+            sudo find /var/log -type f -exec truncate -s 0 {} \; || true
+            sudo df -h /
+            
+            # Deploy application
             echo "🏗️ Building and starting containers"
             docker-compose down --remove-orphans || true
             docker-compose build --no-cache
             docker-compose up -d --force-recreate
             
-            # Health check
-            echo "🩺 Starting health checks"
+            # Health check with diagnostics
+            echo "🩺 Starting health checks (15s intervals)"
+            HEALTHY=false
             for i in {1..10}; do
-              sleep 10
-              if docker-compose ps | grep -q '(healthy)'; then
+              sleep 15
+              CONTAINER_STATUS=$(docker-compose ps)
+              echo "📊 Container status (attempt $i/10):"
+              echo "$CONTAINER_STATUS"
+              
+              if echo "$CONTAINER_STATUS" | grep -q '(healthy)'; then
                 echo "✅ Services are healthy"
+                HEALTHY=true
                 break
-              else
-                echo "⏳ Waiting for services to become healthy (attempt $i/10)"
-                docker-compose ps
               fi
             done
+            
+            if [ "$HEALTHY" = false ]; then
+              echo "❌ Services failed to become healthy"
+              echo "📜 Displaying container logs:"
+              docker-compose logs --tail=100 || true
+              echo "🔍 Service diagnostics:"
+              docker-compose ps -a || true
+              docker stats --no-stream || true
+              exit 1
+            fi
             
             echo "📦 Final container status:"
             docker-compose ps -a
