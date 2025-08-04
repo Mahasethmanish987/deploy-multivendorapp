@@ -8,9 +8,6 @@ jobs:
   deploy-instance1:
     runs-on: ubuntu-latest
     name: Deploy to Instance 1
-    # Request disk space to prevent CI errors
-    with:
-      disk: 10GB
     steps:
       - name: Checkout code 
         uses: actions/checkout@v4
@@ -20,6 +17,7 @@ jobs:
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           
+          # Add retry logic for SSH keyscan
           for i in {1..5}; do
             ssh-keyscan -H ${{ secrets.EC2_HOST1 }} >> ~/.ssh/known_hosts 2>&1 && {
               echo "✅ SSH keyscan succeeded on attempt $i"
@@ -29,7 +27,9 @@ jobs:
               sleep 3
             }
           done
+          
           chmod 600 ~/.ssh/known_hosts
+          echo "🔑 Host keys added to known_hosts"
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
@@ -41,105 +41,87 @@ jobs:
             set -e
             echo "🚀 Starting deployment on Instance 1"
             
+            # Set environment variables
             USER="${{ secrets.EC2_USERNAME }}"
             APP_DIR="/home/$USER/foodonline"
             
-            # Setup directory
+            # Create application directory
             echo "📁 Using directory: $APP_DIR"
             sudo mkdir -p "$APP_DIR"
             sudo chown -R $USER:$USER "$APP_DIR"
             cd "$APP_DIR"
             
-            # Repository setup
+            # Initialize Git repository
             if [ ! -d .git ]; then
-              git init -q
+              echo "🔧 Initializing Git repository"
+              git config --global init.defaultBranch master
+              git init
               git remote add origin https://github.com/Mahasethmanish987/deploy-multivendorapp.git
             fi
             
-            # Get latest code
-            echo "⬇️ Fetching latest code"
+            # Fetch latest code
+            echo "⬇️ Fetching latest code from repository"
             git fetch origin
             git reset --hard origin/master
             
-            # Ensure Docker is available
-            echo "🐳 Verifying Docker environment"
-            if ! command -v docker &> /dev/null; then
-              echo "Installing Docker..."
-              sudo apt-get update -qq
-              sudo apt-get install -y docker.io
+            # Start Docker service if not running
+            if ! sudo systemctl is-active --quiet docker; then
+              echo "🐳 Starting Docker service..."
+              sudo systemctl start docker
+              sudo systemctl enable docker
+              sleep 5  # Wait for Docker to start
             fi
             
-            # Install Docker Compose if missing
-            if ! command -v docker-compose &> /dev/null; then
-              echo "Installing Docker Compose..."
-              sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-              sudo chmod +x /usr/local/bin/docker-compose
-            fi
-            
-            # Start Docker service
-            sudo systemctl start docker || true
-            sudo systemctl enable docker || true
-            
-            # Add user to docker group
+            # Add user to docker group if needed
             if ! groups $USER | grep -q '\bdocker\b'; then
-              echo "👥 Adding user to docker group"
+              echo "👤 Adding user to docker group..."
               sudo usermod -aG docker $USER
-              # Activate group without restarting session
-              exec sg docker -c "$0 $@" || true
+              
+              # Re-execute script with new group permissions
+              echo "🔄 Re-running script with new group permissions"
+              exec sg docker -c "$0"
             fi
             
-            # Disk space management
-            echo "🧹 Cleaning up disk space before build"
-            sudo df -h /
-            sudo apt-get clean -y || true
-            sudo docker system prune -af || true
-            sudo docker volume prune -f || true
-            sudo rm -rf /var/lib/apt/lists/* || true
-            sudo rm -rf /tmp/* || true
-            sudo find /var/log -type f -exec truncate -s 0 {} \; || true
-            sudo df -h /
+            # Verify Docker environment
+            echo "🔍 Docker environment:"
+            docker --version
+            docker compose version
             
-            # Deploy application
+            # Cleanup previous deployment
+            echo "🧹 Cleaning up previous deployment"
+            docker compose -f docker-compose.yml down --remove-orphans || true
+            
+            # Build and start new containers
             echo "🏗️ Building and starting containers"
-            docker-compose down --remove-orphans || true
-            docker-compose build --no-cache
-            docker-compose up -d --force-recreate
+            docker compose -f docker-compose.yml build --no-cache
+            docker compose -f docker-compose.yml up -d --force-recreate
             
-            # Health check with diagnostics
-            echo "🩺 Starting health checks (15s intervals)"
-            HEALTHY=false
-            for i in {1..10}; do
-              sleep 15
-              CONTAINER_STATUS=$(docker-compose ps)
-              echo "📊 Container status (attempt $i/10):"
-              echo "$CONTAINER_STATUS"
-              
-              if echo "$CONTAINER_STATUS" | grep -q '(healthy)'; then
-                echo "✅ Services are healthy"
-                HEALTHY=true
+            # Health check with retries
+            echo "🩺 Performing health check"
+            for i in {1..5}; do
+              sleep 10
+              CONTAINERS_RUNNING=$(docker compose ps -q | wc -l)
+              if [ "$CONTAINERS_RUNNING" -gt 0 ] && docker compose ps | grep -q 'Up (healthy)'; then
+                echo "✅ Containers are running and healthy"
                 break
+              else
+                echo "🔄 Containers not ready yet (attempt $i/5)"
+                docker compose ps
               fi
             done
             
-            if [ "$HEALTHY" = false ]; then
-              echo "❌ Services failed to become healthy"
-              echo "📜 Displaying container logs:"
-              docker-compose logs --tail=100 || true
-              echo "🔍 Service diagnostics:"
-              docker-compose ps -a || true
-              docker stats --no-stream || true
-              exit 1
-            fi
+            # Show deployment status
+            echo "📦 Container status:"
+            docker compose ps -a
             
-            echo "📦 Final container status:"
-            docker-compose ps -a
+            echo "📜 Recent logs:"
+            docker compose logs -t --tail=50
+            
             echo "✅ Deployment complete on Instance 1"
 
   deploy-instance2:
     runs-on: ubuntu-latest
     name: Deploy to Instance 2
-    with:
-      disk: 10GB
     steps:
       - name: Checkout code 
         uses: actions/checkout@v4
@@ -149,6 +131,7 @@ jobs:
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           
+          # Add retry logic for SSH keyscan
           for i in {1..5}; do
             ssh-keyscan -H ${{ secrets.EC2_HOST2 }} >> ~/.ssh/known_hosts 2>&1 && {
               echo "✅ SSH keyscan succeeded on attempt $i"
@@ -158,7 +141,9 @@ jobs:
               sleep 3
             }
           done
+          
           chmod 600 ~/.ssh/known_hosts
+          echo "🔑 Host keys added to known_hosts"
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
@@ -170,96 +155,80 @@ jobs:
             set -e
             echo "🚀 Starting deployment on Instance 2"
             
+            # Set environment variables
             USER="${{ secrets.EC2_USERNAME }}"
             APP_DIR="/home/$USER/foodonline"
             
-            # Setup directory
+            # Create application directory
             echo "📁 Using directory: $APP_DIR"
             sudo mkdir -p "$APP_DIR"
             sudo chown -R $USER:$USER "$APP_DIR"
             cd "$APP_DIR"
             
-            # Repository setup
+            # Initialize Git repository
             if [ ! -d .git ]; then
-              git init -q
+              echo "🔧 Initializing Git repository"
+              git config --global init.defaultBranch master
+              git init
               git remote add origin https://github.com/Mahasethmanish987/deploy-multivendorapp.git
             fi
             
-            # Get latest code
-            echo "⬇️ Fetching latest code"
+            # Fetch latest code
+            echo "⬇️ Fetching latest code from repository"
             git fetch origin
             git reset --hard origin/master
             
-            # Ensure Docker is available
-            echo "🐳 Verifying Docker environment"
-            if ! command -v docker &> /dev/null; then
-              echo "Installing Docker..."
-              sudo apt-get update -qq
-              sudo apt-get install -y docker.io
+            # Start Docker service if not running
+            if ! sudo systemctl is-active --quiet docker; then
+              echo "🐳 Starting Docker service..."
+              sudo systemctl start docker
+              sudo systemctl enable docker
+              sleep 5  # Wait for Docker to start
             fi
             
-            # Install Docker Compose if missing
-            if ! command -v docker-compose &> /dev/null; then
-              echo "Installing Docker Compose..."
-              sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-              sudo chmod +x /usr/local/bin/docker-compose
-            fi
-            
-            # Start Docker service
-            sudo systemctl start docker || true
-            sudo systemctl enable docker || true
-            
-            # Add user to docker group
+            # Add user to docker group if needed
             if ! groups $USER | grep -q '\bdocker\b'; then
-              echo "👥 Adding user to docker group"
+              echo "👤 Adding user to docker group..."
               sudo usermod -aG docker $USER
-              # Activate group without restarting session
-              exec sg docker -c "$0 $@" || true
+              
+              # Re-execute script with new group permissions
+              echo "🔄 Re-running script with new group permissions"
+              exec sg docker -c "$0"
             fi
             
-            # Disk space management
-            echo "🧹 Cleaning up disk space before build"
-            sudo df -h /
-            sudo apt-get clean -y || true
-            sudo docker system prune -af || true
-            sudo docker volume prune -f || true
-            sudo rm -rf /var/lib/apt/lists/* || true
-            sudo rm -rf /tmp/* || true
-            sudo find /var/log -type f -exec truncate -s 0 {} \; || true
-            sudo df -h /
+            # Verify Docker environment
+            echo "🔍 Docker environment:"
+            docker --version
+            docker compose version
             
-            # Deploy application
+            # Cleanup previous deployment
+            echo "🧹 Cleaning up previous deployment"
+            docker compose -f docker-compose-tier.yml down --remove-orphans || true
+            
+            # Build and start new containers
             echo "🏗️ Building and starting containers"
-            docker-compose down --remove-orphans || true
-            docker-compose build --no-cache
-            docker-compose up -d --force-recreate
+            docker compose -f docker-compose-tier.yml build --no-cache
+            docker compose -f docker-compose-tier.yml up -d --force-recreate
             
-            # Health check with diagnostics
-            echo "🩺 Starting health checks (15s intervals)"
-            HEALTHY=false
-            for i in {1..10}; do
-              sleep 15
-              CONTAINER_STATUS=$(docker-compose ps)
-              echo "📊 Container status (attempt $i/10):"
-              echo "$CONTAINER_STATUS"
-              
-              if echo "$CONTAINER_STATUS" | grep -q '(healthy)'; then
-                echo "✅ Services are healthy"
-                HEALTHY=true
+            # Health check with retries
+            echo "🩺 Performing health check"
+            for i in {1..5}; do
+              sleep 10
+              CONTAINERS_RUNNING=$(docker compose -f docker-compose-tier.yml ps -q | wc -l)
+              if [ "$CONTAINERS_RUNNING" -gt 0 ] && docker compose -f docker-compose-tier.yml ps | grep -q 'Up (healthy)'; then
+                echo "✅ Containers are running and healthy"
                 break
+              else
+                echo "🔄 Containers not ready yet (attempt $i/5)"
+                docker compose -f docker-compose-tier.yml ps
               fi
             done
             
-            if [ "$HEALTHY" = false ]; then
-              echo "❌ Services failed to become healthy"
-              echo "📜 Displaying container logs:"
-              docker-compose logs --tail=100 || true
-              echo "🔍 Service diagnostics:"
-              docker-compose ps -a || true
-              docker stats --no-stream || true
-              exit 1
-            fi
+            # Show deployment status
+            echo "📦 Container status:"
+            docker compose -f docker-compose-tier.yml ps -a
             
-            echo "📦 Final container status:"
-            docker-compose ps -a
+            echo "📜 Recent logs:"
+            docker compose -f docker-compose-tier.yml logs -t --tail=50
+            
             echo "✅ Deployment complete on Instance 2"
