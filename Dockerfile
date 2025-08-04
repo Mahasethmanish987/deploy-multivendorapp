@@ -16,14 +16,14 @@ ENV PYTHONUNBUFFERED=1 \
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         binutils=2.40-2 \
-        gdal-bin=3.6.2+dfsg-1+b2 \
-        libgdal-dev=3.6.2+dfsg-1+b2 \
-        python3-gdal=3.6.2+dfsg-1+b2 \
-        libgeos-dev=3.11.2-1 \
-        gettext=0.21-11 \
+        gdal-bin \
+        libgdal-dev \
+        python3-gdal \
+        libgeos-dev \
+        gettext \
         # Additional spatial dependencies
-        proj-bin=9.1.1-1+b1 \
-        libspatialite-dev=5.0.1-3 && \
+        proj-bin \
+        libspatialite-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # Set working directory
