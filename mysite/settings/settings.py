@@ -20,7 +20,7 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = ["foodonline.run.place","www.foodonline.run.place","172.31.40.127","web"]
 
-
+    
 # Application definition
 
 AWS_ACCESS_KEY_ID=os.environ.get('AWS_ACCESS_KEY_ID')
