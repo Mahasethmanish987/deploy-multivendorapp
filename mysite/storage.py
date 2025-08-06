@@ -11,5 +11,5 @@ class StaticStorage(S3Boto3Storage):
    location='static'
    default_acl='public-read'
    file_overwite=False 
-   print('hlw fdffgxcdfuchebhusalfgowrld')
+   print('hlw fdffgxcdfucsdfhebhusalfgowrld')
    
