@@ -91,13 +91,13 @@ class User(AbstractBaseUser):
 class ProfileMediaStorage(S3Boto3Storage):
     location = "media/users/profile_picture"
     default_acl = "public-read"  # Public access
-    file_overwrite = False
+    
 
 
 class CoverMediaStorage(S3Boto3Storage):
     location = "media/users/cover_photo"
     default_acl = "public-read"  # Public access
-    file_overwrite = False
+    
 
 
 class UserProfile(models.Model):

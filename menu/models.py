@@ -7,7 +7,7 @@ from storages.backends.s3boto3 import S3Boto3Storage
 class FoodMediaStorage(S3Boto3Storage):
     location = 'media/food_photo'
     default_acl = 'public-read'  # Public access
-    file_overwrite = False 
+    
 
 class Category(models.Model):
     vendor=models.ForeignKey(Vendor,on_delete=models.CASCADE)
