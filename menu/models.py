@@ -5,7 +5,7 @@ from storages.backends.s3boto3 import S3Boto3Storage
 
 
 class FoodMediaStorage(S3Boto3Storage):
-    location = 'media/users/cover_photo'
+    location = 'media/food_photo'
     default_acl = 'public-read'  # Public access
     file_overwrite = False 
 
