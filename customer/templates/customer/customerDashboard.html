@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     {% for order in orders %}
     (function (orderId) {
-        const socket = new WebSocket(`${wsScheme}://foodonline.run.place/ws/order/${orderId}/`);
+        const socket = new WebSocket(`${wsScheme}://foodonline.work.gd/ws/order/${orderId}/`);
         orderSockets[orderId] = socket;
         
         socket.onmessage = function (e) {
