@@ -93,7 +93,7 @@ def place_order(request):
 
             if order.payment_method == "esewa":
                 request.session["order_id"] = order.order_number
-                context["api_url"] = "https://foodonline.run.place/order/esewacredentials/"
+                context["api_url"] = "https://foodonline.work.gd/order/esewacredentials/"
                 return render(request, "order/place_order.html", context)
             else:
                 return render(request, "marketplace/checkout.html", {"form": form})
