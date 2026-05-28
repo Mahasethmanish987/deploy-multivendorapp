@@ -64,8 +64,9 @@
         {% for ordered in ordered_food %}
         (function (orderId, foodId) {
             // Create WebSocket connection
+            const protocol = window.location.protocol === "https:" ? "wss" : "ws";
             const socket = new WebSocket(
-                `wss://foodonline.work.gd/ws/order/${foodId}/`
+                `${protocol}://${window.location.host}/ws/order/${foodId}/`
             );
 
             // Store socket reference

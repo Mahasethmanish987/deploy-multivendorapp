@@ -9,23 +9,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY')
+SECRET_KEY = os.environ.get("SECRET_KEY")
 IS_DOCKER = os.path.exists("/.dockerenv")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = ["172.31.41.212"]
 
+AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
+AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
+AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME")
+AWS_S3_CUSTOM_DOMAIN = (
+    f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com"
+)
+AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
 
-# Application definition
-
-AWS_ACCESS_KEY_ID=os.environ.get('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY=os.environ.get('AWS_SECRET_ACCESS_KEY')
-AWS_STORAGE_BUCKET_NAME=os.environ.get('AWS_STORAGE_BUCKET_NAME')
-AWS_S3_REGION_NAME=os.environ.get('AWS_S3_REGION_NAME')
-AWS_S3_CUSTOM_DOMAIN=f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
-AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
- 
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -47,7 +46,7 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "django_celery_results",
     "admins",
-    'storages'
+    "storages",
 ]
 
 MIDDLEWARE = [
@@ -125,11 +124,11 @@ CHANNEL_LAYERS = {
         "CONFIG": {"hosts": [(REDIS_HOST, int(REDIS_PORT))]},
     }
 }
-SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
-SESSION_COOKIE_NAME = 'food_delivery_session'
+SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
+SESSION_COOKIE_NAME = "food_delivery_session"
 SESSION_COOKIE_AGE = 86400
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = 'Lax' 
+SESSION_COOKIE_SAMESITE = "Lax"
 
 # Security settings
 SECURE_SSL_REDIRECT = False
@@ -144,8 +143,7 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
 LANGUAGE_CODE = "en-us"
@@ -157,7 +155,6 @@ USE_I18N = True
 USE_TZ = True
 
 
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_HOST_USER = "mahasethmanish63@gmail.com"
@@ -167,12 +164,12 @@ EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = "mahasethmanish63@gmail.com"
 
 
-STATIC_ROOT = BASE_DIR/'static_collection'
+STATIC_ROOT = BASE_DIR / "static_collection"
 STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
-STATICFILES_STORAGE = 'mysite.s3_utils.StaticStorage'
+STATICFILES_STORAGE = "mysite.s3_utils.StaticStorage"
 
-MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
-DEFAULT_FILE_STORAGE = 'mysite.s3_utils.MediaStorage'
+MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
+DEFAULT_FILE_STORAGE = "mysite.s3_utils.MediaStorage"
 
 if not IS_DOCKER:
     # Windows-specific paths
@@ -191,4 +188,4 @@ CELERY_RESULT_BACKEND = "django-db"
 CELERY_TIMEZONE = "Asia/Kathmandu"
 CELERY_RESULT_EXTENDED = True
 CELERY_ENABLE_UTC = True
-GOOGLE_API_KEY=os.environ.get('GOOGLE_API_KEY')
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")

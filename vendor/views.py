@@ -1,29 +1,29 @@
 import logging
+import traceback
 import uuid
 from smtplib import SMTPException
-from django.http import JsonResponse
+
 from accounts.forms import UserForm, UserProfileForm
 from accounts.models import User, UserProfile
 from accounts.utils import send_verification_email
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
-from django.http import Http404
+from django.db import IntegrityError, transaction
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from django.utils.text import slugify
 from django_ratelimit.decorators import ratelimit
-from menu.forms import CategoryForm,FoodItemForm
+from menu.forms import CategoryForm, FoodItemForm
 from menu.models import Category, FoodItem
-from urllib.parse import urlparse
-from .forms import OpeningHourForm
-from .forms import VendorForm
-from .models import Vendor,OpeningHour
-from django.db import IntegrityError
-from order.models import  OrderedFood
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
-from django.contrib.auth.tokens import default_token_generator
+from order.models import OrderedFood
+
+from .forms import OpeningHourForm, VendorForm
+from .models import OpeningHour, Vendor
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,7 +37,7 @@ def getVendor(request):
 
 
 def checkVendor(user):
-    if user.role == 1 :
+    if user.role == 1:
         return True
     else:
         raise PermissionDenied
@@ -53,11 +53,11 @@ def checkCustomer(user):
 @login_required(login_url="accounts:login")
 @user_passes_test(checkVendor)
 def vendorDashboard(request):
-    orderedfood=OrderedFood.objects.filter(fooditem__vendor=getVendor(request),status__in=['pending','accepted'])
-    context={
-        'ordered_food':orderedfood
-    }
-    return render(request, "vendor/vendorDashboard.html",context)
+    orderedfood = OrderedFood.objects.filter(
+        fooditem__vendor=getVendor(request), status__in=["pending", "accepted"]
+    )
+    context = {"ordered_food": orderedfood}
+    return render(request, "vendor/vendorDashboard.html", context)
 
 
 @ratelimit(key="ip", rate="5/m", block=True)
@@ -85,29 +85,43 @@ def vendorRegister(request):
                     )
                     user.role = User.RESTAURANT
                     user.save()
-                    
 
                     # send Verification email
-                    domain=request.get_host()
-                    uid=urlsafe_base64_encode(force_bytes(user.pk))
-                    token=default_token_generator.make_token(user)
+                    domain = request.get_host()
+                    uid = urlsafe_base64_encode(force_bytes(user.pk))
+                    token = default_token_generator.make_token(user)
                     mail_subject = "please activate your account"
                     mail_template = "accounts/account_verification.html"
-                    send_verification_email.delay(domain,user.email,uid,token,mail_subject,mail_template)
-                    
+                    print(
+                        "sending email...",
+                        "to:",
+                        email,
+                        "uid:",
+                        uid,
+                        "token:",
+                        token,
+                        "domain:",
+                        domain,
+                    )
+                    send_verification_email.delay(
+                        domain, user.email, uid, token, mail_subject, mail_template
+                    )
+                    print("email sent successfully")
                     vendor = v_form.save(commit=False)
                     vendor.user = user
+                    print("vendor created successfully")
                     user_profile1 = UserProfile.objects.get(user=user)
                     vendor.user_profile = user_profile1
                     vendor.save()
+                    print("vendor saved successfully")
 
                     messages.success(request, "User registered successfully")
                     return redirect("myapp:index")
             except SMTPException as e:
-                # Transaction automatically rolls back (user/vendor not saved)
                 logger.error(f"Email failed: {e}")
                 messages.error(request, "Failed to send verification email. Try again.")
             except Exception as e:
+                traceback.print_exc()
                 print(f"Error during user registration: {e}")
                 messages.error(
                     request, "An error occurred during registration. Please try again."
@@ -185,7 +199,7 @@ def fooditems_by_category(request, slug):
 @user_passes_test(checkVendor, login_url="accounts:login")
 def add_category(request):
     if request.method == "POST":
-        form = CategoryForm(request.POST,user=request.user)
+        form = CategoryForm(request.POST, user=request.user)
         if form.is_valid():
             category = form.save(commit=False)
             category.vendor = getVendor(request)
@@ -214,13 +228,15 @@ def edit_category(request, slug):
     except Http404:
         messages.error(request, "The categories  does not exist")
     if request.method == "POST":
-        form = CategoryForm(request.POST, user=request.user,instance=category)
+        form = CategoryForm(request.POST, user=request.user, instance=category)
         if form.is_valid():
             try:
                 category = form.save(commit=False)
                 category.vendor = getVendor(request)
 
-                category.slug = slugify(category.category_name) + "-" + str(uuid.uuid4())[:12]
+                category.slug = (
+                    slugify(category.category_name) + "-" + str(uuid.uuid4())[:12]
+                )
                 category.save()
                 messages.success(request, "Your category has been updated")
                 return redirect("vendor:menu_builder")
@@ -234,138 +250,169 @@ def edit_category(request, slug):
             context = {"form": form}
             return render(request, "vendor/edit_category.html", context)
     else:
-        form = CategoryForm(instance=category,user=request.user)
+        form = CategoryForm(instance=category, user=request.user)
         context = {"form": form}
         return render(request, "vendor/edit_category.html", context)
 
 
 @login_required(login_url="accounts:login")
 @user_passes_test(checkVendor, login_url="accounts:login")
-def delete_category(request,slug):
+def delete_category(request, slug):
     try:
-        category=get_object_or_404(Category,category_slug=slug,vendor=getVendor(request))
+        category = get_object_or_404(
+            Category, category_slug=slug, vendor=getVendor(request)
+        )
         category.delete()
-        messages.success(request,'Category is successfully deleted')
+        messages.success(request, "Category is successfully deleted")
     except Http404:
-        messages.error(request,'The category does not exist for you do not have permission to delete these category')
+        messages.error(
+            request,
+            "The category does not exist for you do not have permission to delete these category",
+        )
     except Category.DoesNotExist:
-        messages.error(request,'No such category exist')
+        messages.error(request, "No such category exist")
 
     except Exception as e:
-        messages.error(request,f'An error occured while updating the category:{str(e)}')
+        messages.error(
+            request, f"An error occured while updating the category:{str(e)}"
+        )
 
-    return redirect('vendor:menu_builder')
+    return redirect("vendor:menu_builder")
 
 
 @login_required(login_url="accounts:login")
 @user_passes_test(checkVendor, login_url="accounts:login")
 def add_food(request):
-    
-    
-    if request.method=='POST':
-        form=FoodItemForm(request.POST,request.FILES,user=request.user)
+
+    if request.method == "POST":
+        form = FoodItemForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
-            foodtitle=form.cleaned_data['food_title']
+            foodtitle = form.cleaned_data["food_title"]
             logger.info(foodtitle)
-            food=form.save(commit=False)
-            food.vendor=getVendor(request)
-            food.food_slug=slugify(foodtitle)+'-'+str(uuid.uuid4())[:12]
+            food = form.save(commit=False)
+            food.vendor = getVendor(request)
+            food.food_slug = slugify(foodtitle) + "-" + str(uuid.uuid4())[:12]
             food.save()
-            messages.success(request,'Food items has updated succesfully')
-            return redirect('vendor:fooditem_by_category' ,food.category.category_slug)
+            messages.success(request, "Food items has updated succesfully")
+            return redirect("vendor:fooditem_by_category", food.category.category_slug)
         else:
-            return render(request,'vendor/add_food.html',{'form':form})
+            return render(request, "vendor/add_food.html", {"form": form})
     else:
+        form = FoodItemForm(user=request.user)
 
-      form=FoodItemForm(user=request.user)
-      
-      form.fields['category'].queryset=Category.objects.filter(vendor=getVendor(request))
-      return render(request,'vendor/add_food.html',{'form':form})
-
+        form.fields["category"].queryset = Category.objects.filter(
+            vendor=getVendor(request)
+        )
+        return render(request, "vendor/add_food.html", {"form": form})
 
 
 @login_required(login_url="accounts:login")
 @user_passes_test(checkVendor, login_url="accounts:login")
-def edit_food(request,slug):
-    
-    food=get_object_or_404(FoodItem,food_slug=slug)
-    if request.method=='POST':
-        form=FoodItemForm(request.POST,request.FILES,user=request.user,instance=food)
+def edit_food(request, slug):
+
+    food = get_object_or_404(FoodItem, food_slug=slug)
+    if request.method == "POST":
+        form = FoodItemForm(
+            request.POST, request.FILES, user=request.user, instance=food
+        )
         if form.is_valid():
-            foodtitle=form.cleaned_data['food_title']
-            food1=form.save(commit=False)
-            food1.vendor=getVendor(request)
-            food1.food_slug=slugify(foodtitle)+'-'+str(uuid.uuid4())[:12]
+            foodtitle = form.cleaned_data["food_title"]
+            food1 = form.save(commit=False)
+            food1.vendor = getVendor(request)
+            food1.food_slug = slugify(foodtitle) + "-" + str(uuid.uuid4())[:12]
             food1.save()
-            messages.success(request,'Food items saved successfully')
-            return redirect('vendor:fooditem_by_category',food.category.category_slug)
+            messages.success(request, "Food items saved successfully")
+            return redirect("vendor:fooditem_by_category", food.category.category_slug)
         else:
-            return render(request,'vendor/edit_food.html',{'form':form,'food':food})
+            return render(
+                request, "vendor/edit_food.html", {"form": form, "food": food}
+            )
     else:
-        form=FoodItemForm(instance=food,user=request.user)
-    return render(request,'vendor/edit_food.html',{'form':form,'food':food})
-
+        form = FoodItemForm(instance=food, user=request.user)
+    return render(request, "vendor/edit_food.html", {"form": form, "food": food})
 
 
 @login_required(login_url="accounts:login")
 @user_passes_test(checkVendor, login_url="accounts:login")
-def delete_food(request,slug):
-       
-        food=get_object_or_404(FoodItem,food_slug=slug)
-        food.delete()
-        messages.success(request,'food items deleted successfuly')
-        return redirect('vendor:fooditem_by_category',food.category.category_slug)
+def delete_food(request, slug):
+
+    food = get_object_or_404(FoodItem, food_slug=slug)
+    food.delete()
+    messages.success(request, "food items deleted successfuly")
+    return redirect("vendor:fooditem_by_category", food.category.category_slug)
 
 
-@login_required(login_url='accounts:login')
+@login_required(login_url="accounts:login")
 @user_passes_test(checkVendor)
 def opening_hours(request):
-    
-    form=OpeningHourForm()
-    opening_hours=OpeningHour.objects.filter(vendor=getVendor(request))
-    context={
-        'form':form,
-        'opening_hours':opening_hours
-    }
-    return render(request,'vendor/opening_hour.html',context)
+
+    form = OpeningHourForm()
+    opening_hours = OpeningHour.objects.filter(vendor=getVendor(request))
+    context = {"form": form, "opening_hours": opening_hours}
+    return render(request, "vendor/opening_hour.html", context)
+
 
 def add_opening_hours(request):
     if not request.user.is_authenticated:
-        return JsonResponse({'status':'Failed','message':'User should be authenticated'})
+        return JsonResponse(
+            {"status": "Failed", "message": "User should be authenticated"}
+        )
 
-    if request.headers.get('x-requested-with')!='XMLHttpRequest':
-        return JsonResponse({'status':'Failed','message':'Invalied Request'})
+    if request.headers.get("x-requested-with") != "XMLHttpRequest":
+        return JsonResponse({"status": "Failed", "message": "Invalied Request"})
 
-    day=request.POST['day']
-    from_hour=request.POST['from_hour']
-    to_hour=request.POST['to_hour']
-    is_closed=request.POST['is_closed']
-    
+    day = request.POST["day"]
+    from_hour = request.POST["from_hour"]
+    to_hour = request.POST["to_hour"]
+    is_closed = request.POST["is_closed"]
+
     try:
-        hour=OpeningHour.objects.create(vendor=getVendor(request),day=day,from_hour=from_hour,to_hour=to_hour,is_closed=is_closed)
+        hour = OpeningHour.objects.create(
+            vendor=getVendor(request),
+            day=day,
+            from_hour=from_hour,
+            to_hour=to_hour,
+            is_closed=is_closed,
+        )
 
         if hour:
-            print(day,from_hour,to_hour,is_closed)
-            day=OpeningHour.objects.get(id=hour.id)
+            print(day, from_hour, to_hour, is_closed)
+            day = OpeningHour.objects.get(id=hour.id)
             if day.is_closed:
-                response={'status':'success','id':hour.id,'day':day.get_day_display(),'is_closed':'closed'}
+                response = {
+                    "status": "success",
+                    "id": hour.id,
+                    "day": day.get_day_display(),
+                    "is_closed": "closed",
+                }
 
             else:
-                response={'status':'success','id':hour.id,'day':day.get_day_display(),'from_hour':day.from_hour,'to_hour':day.to_hour}
+                response = {
+                    "status": "success",
+                    "id": hour.id,
+                    "day": day.get_day_display(),
+                    "from_hour": day.from_hour,
+                    "to_hour": day.to_hour,
+                }
 
-            
             return JsonResponse(response)
     except IntegrityError as e:
-        response={'status':'Failed','message':from_hour+'-'+to_hour+'already exists','error':str(e)}
+        response = {
+            "status": "Failed",
+            "message": from_hour + "-" + to_hour + "already exists",
+            "error": str(e),
+        }
 
 
-def remove_opening_hours(request,pk):
+def remove_opening_hours(request, pk):
     if not request.user.is_authenticated:
-        return JsonResponse({'status':'login_required','message':'User should be authenticated'})
+        return JsonResponse(
+            {"status": "login_required", "message": "User should be authenticated"}
+        )
 
-    if request.headers.get('x-requested-with')!='XMLHttpRequest':
-        return JsonResponse({'status':'Failed','message':'Invalied Request'})
+    if request.headers.get("x-requested-with") != "XMLHttpRequest":
+        return JsonResponse({"status": "Failed", "message": "Invalied Request"})
 
-    hour=get_object_or_404(OpeningHour,pk=pk)
+    hour = get_object_or_404(OpeningHour, pk=pk)
     hour.delete()
-    return JsonResponse({'status':'success','id':pk})
+    return JsonResponse({"status": "success", "id": pk})

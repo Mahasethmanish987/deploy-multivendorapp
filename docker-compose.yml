@@ -5,68 +5,81 @@ services:
     build: .
     
     volumes:
-      - .:/app
-      
+      - .:/app    
     ports:
       - "8000:8000"
     env_file:
       - .env.web
     environment:
-      - DJANGO_DEBUG=False
+      - DJANGO_DEBUG=True
       - GDAL_DATA=/usr/share/gdal
       - DJANGO_SETTINGS_MODULE=mysite.settings.settings
-    
-      
-      
     command: >
-      sh -c "python manage.py wait_for_db &&
-             python manage.py migrate &&
+      sh -c "python manage.py migrate &&
              python manage.py collectstatic --noinput --verbosity 3 &&
-             daphne -b 0.0.0.0 -p 8000 mysite.asgi:application"
-
-
-
-  
-
-  
-
-  
-
-  
-  nginx:
-    build: ./nginx
+             python manage.py runserver 0.0.0.0:8000"
+    
+  redis:
+    image: redis:7
+    container_name: redis
+    volumes:
+      - redis_data:/data
     ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /home/ubuntu/certbot/www:/var/www/certbot
-      - /home/ubuntu/certbot/conf:/etc/letsencrypt
-    depends_on:
-      - web
-      
-    
-    
-        
+     - "6379:6379"  
+    restart: always
 
-  certbot:
-    image: certbot/certbot:latest
+  celery_worker:
+    build: .
+    command: celery -A mysite worker --loglevel=info --concurrency=2
     volumes:
-      - /home/ubuntu/certbot/www:/var/www/certbot
-      - /home/ubuntu/certbot/conf:/etc/letsencrypt
-    command: 
-      - "certonly"
-      - "--webroot"
-      - "-w"
-      - "/var/www/certbot"
-      - "-d"
-      - "foodonline.work.gd"
-      - "-d"
-      - "www.foodonline.work.gd"
-      - "--email"
-      - "mahasethmanish63@gmail.com"
-      - "--non-interactive"
-      - "--agree-tos"
-      - "--keep-until-expiring"
+      - .:/app
+    env_file:
+      - .env.web
+    environment:
+      - DJANGO_DEBUG=True  
+      - GDAL_DATA=/usr/share/gdal
+      - DJANGO_SETTINGS_MODULE=mysite.settings.settings
     depends_on:
-      - nginx
+      - redis      
+    restart: unless-stopped
 
+  celery_beat:
+    build: .
+    command: celery -A mysite beat --loglevel=info
+    volumes:
+      - .:/app
+      - beat_data:/var/celery
+    env_file:
+      - .env.web
+    environment:
+      - DJANGO_DEBUG=False  
+      - GDAL_DATA=/usr/share/gdal
+      - DJANGO_SETTINGS_MODULE=mysite.settings.settings
+      - CELERY_BEAT_SCHEDULE_FILENAME=/var/celery/beat-schedule
+    depends_on:
+      - redis
+     
+    restart: unless-stopped
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: fooddb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  
+
+  
+
+volumes:
+  
+  redis_data:
+  beat_data:
+  postgres_data:
+  

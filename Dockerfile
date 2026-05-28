@@ -27,13 +27,10 @@ WORKDIR /app
 
 # Upgrade pip
 RUN pip install --upgrade pip
-
-# Copy and install requirements
 COPY requirements.txt .
 RUN sed -i '/^gdal==/d' requirements.txt && \
     pip install -r requirements.txt
 
-# Install GDAL bindings from system package
 RUN pip install --no-deps pygdal==3.6.2.*
 
 # Copy application code

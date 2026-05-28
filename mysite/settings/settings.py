@@ -1,64 +1,37 @@
 import os
 from pathlib import Path
-import sys
-from mysite.s3_utils import StaticStorage, MediaStorage
-import socket
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+SECRET_KEY = os.environ.get("SECRET_KEY")
 
-sys.path.append(str(BASE_DIR))
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY')
-IS_DOCKER = os.path.exists("/.dockerenv")
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = ["foodonline.work.gd","www.foodonline.work.gd","172.31.40.127","web"]
-
-    
-# Application definition
-
-AWS_ACCESS_KEY_ID=os.environ.get('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY=os.environ.get('AWS_SECRET_ACCESS_KEY')
-AWS_STORAGE_BUCKET_NAME=os.environ.get('AWS_STORAGE_BUCKET_NAME')
-AWS_S3_REGION_NAME=os.environ.get('AWS_S3_REGION_NAME')
-AWS_S3_CUSTOM_DOMAIN=f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
-AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
-
-AWS_DEFAULT_ACL = None
-AWS_QUERYSTRING_AUTH = False
+ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
+    "daphne",
+    "channels",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "myapp",
+    "django.contrib.gis",
     "accounts",
-    "ratelimit",
+    "myapp",
     "vendor",
     "customer",
     "menu",
     "marketplace",
-    "django.contrib.gis",
     "order",
-    "channels",
-    "django_celery_beat",
-    "django_celery_results",
     "admins",
-    'storages'
 ]
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -72,150 +45,100 @@ ROOT_URLCONF = "mysite.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
+                "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "vendor.context_processors.getVendor",
                 "vendor.context_processors.getGoogleApi",
+                "vendor.context_processors.getVendor",
                 "marketplace.context_processor.get_cart_counter",
                 "marketplace.context_processor.cart_amount",
             ],
         },
     },
 ]
-
 ASGI_APPLICATION = "mysite.asgi.application"
+# WSGI_APPLICATION = "mysite.wsgi.application"
 
-
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
     "default": {
         "ENGINE": "django.contrib.gis.db.backends.postgis",
-        "HOST": os.environ.get("POSTGRES_HOST"),
-        "PORT": os.environ.get("POSTGRES_PORT"),
-        "NAME": os.environ.get("POSTGRES_DB"),
-        "USER": os.environ.get("POSTGRES_USER"),
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD"),
+        "NAME": os.environ.get("DB_NAME"),
+        "USER": os.environ.get("DB_USER"),
+        "PASSWORD": os.environ.get("DB_PASSWORD"),
+        "HOST": os.environ.get("DB_HOST"),
+        "PORT": os.environ.get("DB_PORT"),
     }
 }
-
 AUTH_USER_MODEL = "accounts.User"
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
     },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
-REDIS_HOST = os.environ.get("REDIS_HOST", "127.0.0.1")
-REDIS_PORT = os.environ.get("REDIS_PORT", "6379")
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": [(REDIS_HOST, int(REDIS_PORT))]},
-    }
-}
-SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
-SESSION_COOKIE_NAME = 'food_delivery_session'
+
+GDAL_DATA = os.environ.get("GDAL_DATA")
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_AGE = 86400
-SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = 'Lax' 
-
-# Security settings
-SECURE_SSL_REDIRECT = False
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
-
-# Production security settings                                                                                                                                                                                                                          
-# ADD THESE LINES TO settings.py
-
-# 1. Tell Django to trust your domain
-CSRF_TRUSTED_ORIGINS = [
-    'https://foodonline.run.place',
-    'https://www.foodonline.run.place'  # Add if you use www version
-]
-
-# 2. Make Django understand it's behind HTTPS proxy
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-# 3. Keep security ON (important!)
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-
 
 
 LANGUAGE_CODE = "en-us"
-
 TIME_ZONE = "Asia/Kathmandu"
-
 USE_I18N = True
-
 USE_TZ = True
 
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_HOST_USER = "mahasethmanish63@gmail.com"
-EMAIL_HOST_PASSWORD = "yiqm ovye fhcv cnsb"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = "mahasethmanish63@gmail.com"
 
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+EMAIL_HOST = os.environ.get("EMAIL_HOST")
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+EMAIL_PORT = os.environ.get("EMAIL_PORT")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS") == "True"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL")
 
-
-STATICFILES_STORAGE='mysite.storage.StaticStorage'
-STATIC_URL=f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-DEFAULT_FILE_STORAGE='storages.backends.s3boto3.S3Boto3Storage'
-MEDIA_URL=f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
-
-
-
-
-if not IS_DOCKER:
-    # Windows-specific paths
-    os.environ["PATH"] += (
-        os.pathsep + r"C:\Users\mahas\Desktop\multivendor8\venv\Lib\site-packages\osgeo"
-    )
-    os.environ["PROJ_LIB"] = (
-        r"C:\Users\mahas\Desktop\multivendor8\venv\Lib\site-packages\osgeo\data\proj"
-    )
-    GDAL_LIBRARY_PATH = (
-        r"C:\Users\mahas\Desktop\multivendor8\venv\Lib\site-packages\osgeo\gdal308.dll"
-    )
-
-CELERY_BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
-CELERY_RESULT_BACKEND = "django-db"
-CELERY_TIMEZONE = "Asia/Kathmandu"
-CELERY_RESULT_EXTENDED = True
-CELERY_ENABLE_UTC = True
-GOOGLE_API_KEY=os.environ.get('GOOGLE_API_KEY')
-
-
-LOGGING = {
-    'version': 1,
-    'handlers': {
-        'console': {'class': 'logging.StreamHandler'}
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [
+                (
+                    os.environ.get("REDIS_HOST", "redis"),
+                    int(os.environ.get("REDIS_PORT", 6379)),
+                )
+            ],
+        },
     },
-    'loggers': {
-        'django': {'level': 'DEBUG', 'handlers': ['console']},
-        'boto3': {'level': 'DEBUG', 'handlers': ['console']},
-        'botocore': {'level': 'DEBUG', 'handlers': ['console']}
-    }
 }
+INSTALLED_APPS += ["django_celery_results"]
+
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
+
+CELERY_RESULT_BACKEND = "django-db"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "Asia/Kathmandu"
+CELERY_ENABLE_UTC = True
+
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+ESEWA_SUCCESS_URL = os.environ.get("SUCCESS_URL")
+ESEWA_FAILURE_URL = os.environ.get("FAILURE_URL")

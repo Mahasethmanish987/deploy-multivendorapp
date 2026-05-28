@@ -103,11 +103,11 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const orderSockets = {};
-    const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
 
     {% for order in orders %}
     (function (orderId) {
-        const socket = new WebSocket(`${wsScheme}://foodonline.work.gd/ws/order/${orderId}/`);
+        const socket = new WebSocket(`${protocol}://${window.location.host}/ws/order/${orderId}/`);
         orderSockets[orderId] = socket;
         
         socket.onmessage = function (e) {

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.contrib.gis.db import models as gismodels
 from django.contrib.gis.geos import Point
@@ -81,7 +82,7 @@ class User(AbstractBaseUser):
 
     def get_role(self):
         if self.role == self.RESTAURANT:
-            return "Restaurnat"
+            return "Restaurant"
         elif self.role == self.CUSTOMER:
             return "Customer"
         else:
@@ -91,21 +92,31 @@ class User(AbstractBaseUser):
 class ProfileMediaStorage(S3Boto3Storage):
     location = "media/users/profile_picture"
     default_acl = "public-read"  # Public access
-    
 
 
 class CoverMediaStorage(S3Boto3Storage):
     location = "media/users/cover_photo"
     default_acl = "public-read"  # Public access
-    
+
+
+if settings.DEBUG:
+    profile_media_storage = None
+    cover_media_storage = None
+else:
+    profile_media_storage = ProfileMediaStorage()
+    cover_media_storage = CoverMediaStorage()
 
 
 class UserProfile(models.Model):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name="user_profile"
     )
-    profile_picture = models.ImageField(upload_to="", storage=ProfileMediaStorage())
-    cover_photo = models.ImageField(upload_to="", storage=CoverMediaStorage())
+    profile_picture = models.ImageField(
+        upload_to="users/profile_picture/", storage=profile_media_storage
+    )
+    cover_photo = models.ImageField(
+        upload_to="users/cover_photo/", storage=cover_media_storage
+    )
     address = models.CharField(max_length=100, null=True, blank=True)
     country = models.CharField(max_length=100, null=True, blank=True)
     state = models.CharField(max_length=100, null=True, blank=True)

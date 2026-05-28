@@ -53,8 +53,7 @@ def place_order(request):
                 total = k[v_id]
                 total += fooditem.price * cart_item.quantity
                 k[v_id] = total
-                grand_total=total
-                
+                grand_total = total
 
             else:
                 total = fooditem.price * cart_item.quantity
@@ -93,7 +92,12 @@ def place_order(request):
 
             if order.payment_method == "esewa":
                 request.session["order_id"] = order.order_number
-                context["api_url"] = "https://foodonline.work.gd/order/esewacredentials/"
+
+                context = {
+                    "api_url": "http://127.0.0.1:8000/order/esewacredentials/",
+                    "success_url": settings.ESEWA_SUCCESS_URL,
+                    "failure_url": settings.ESEWA_FAILURE_URL,
+                }
                 return render(request, "order/place_order.html", context)
             else:
                 return render(request, "marketplace/checkout.html", {"form": form})
@@ -103,10 +107,12 @@ def place_order(request):
 
 
 def esewacredentials(request):
+
     if not request.user.is_authenticated:
         return JsonResponse({"status": "login_required", "message": "please login"})
     if request.headers.get("x-requested-with") != "XMLHttpRequest":
         return JsonResponse({"status": "Failed", "message": "Invalid request"})
+
     secret_key = "8gBm/:&EnhH.1/q"
     transaction_uuid = uuid.uuid4()
     product_code = "EPAYTEST"
@@ -115,7 +121,6 @@ def esewacredentials(request):
     message = f"total_amount={amount},transaction_uuid={transaction_uuid},product_code={product_code}"
     hash = hmac.new(secret_key.encode(), message.encode(), hashlib.sha256).digest()
     has_in_base64 = base64.b64encode(hash).decode()
-
     return JsonResponse(
         {
             "status": "success",
@@ -224,6 +229,181 @@ def handle_esewa(request):
     return redirect(redirect_url)
 
 
+from django.contrib.auth.decorators import login_required
+
+
+@login_required
+def fake_handle_esewa(request):
+
+    transaction_id = f"TEST-{uuid.uuid4()}"
+
+    order_number = request.session.get("order_id")
+
+    if not order_number:
+        return redirect("cart:cart")
+
+    if Payment.objects.filter(transaction_id=transaction_id).exists():
+        del request.session["order_id"]
+
+        return redirect(
+            f"/order/order_complete/?order_no={order_number}&trans_id={transaction_id}"
+        )
+
+    order = Order.objects.get(user=request.user, order_number=order_number)
+
+    payment = Payment.objects.create(
+        user=request.user,
+        transaction_id=transaction_id,
+        amount=order.total,
+        status="complete",
+    )
+
+    order.payment = payment
+    order.is_ordered = True
+    order.status = "completed"
+    order.save()
+
+    to_emails = set()
+
+    cart_items = Cart.objects.select_related("fooditem__vendor").filter(
+        user=request.user
+    )
+
+    for item in cart_items:
+        vendor = item.fooditem.vendor
+
+        if vendor.is_open():
+            OrderedFood.objects.create(
+                order=order,
+                user=request.user,
+                payment=payment,
+                fooditem=item.fooditem,
+                quantity=item.quantity,
+                price=item.fooditem.price,
+                amount=item.fooditem.price * item.quantity,
+                status="pending",
+            )
+
+            to_emails.add(vendor.user.email)
+
+            item.delete()
+
+    # Customer Email
+    mail_subject = "Thanks for ordering with us"
+
+    mail_template = "order/order_confirmation_email.html"
+
+    context = {
+        "user_first_name": order.first_name,
+        "order_id": order.order_number,
+        "order_transaction_id": payment.transaction_id,
+        "to_email": order.email,
+    }
+
+    send_notification.delay(mail_subject, mail_template, context)
+
+    # Vendor Email
+    mail_subject = "You have received an order"
+
+    mail_template = "order/new_order_received.html"
+
+    context = {"to_email": list(to_emails)}
+
+    send_notification.delay(mail_subject, mail_template, context)
+
+    del request.session["order_id"]
+
+    return redirect(
+        f"/order/order_complete/?order_no={order_number}&trans_id={transaction_id}"
+    )
+
+
+@login_required
+def fake_handle_esewa(request):
+
+    transaction_id = f"TEST-{uuid.uuid4()}"
+
+    order_number = request.session.get("order_id")
+
+    if not order_number:
+        return redirect("cart:cart")
+
+    if Payment.objects.filter(transaction_id=transaction_id).exists():
+        del request.session["order_id"]
+
+        return redirect(
+            f"/order/order_complete/?order_no={order_number}&trans_id={transaction_id}"
+        )
+
+    order = Order.objects.get(user=request.user, order_number=order_number)
+
+    payment = Payment.objects.create(
+        user=request.user,
+        transaction_id=transaction_id,
+        amount=order.total,
+        status="complete",
+    )
+
+    order.payment = payment
+    order.is_ordered = True
+    order.status = "completed"
+    order.save()
+
+    to_emails = set()
+
+    cart_items = Cart.objects.select_related("fooditem__vendor").filter(
+        user=request.user
+    )
+
+    for item in cart_items:
+        vendor = item.fooditem.vendor
+
+        if vendor.is_open():
+            OrderedFood.objects.create(
+                order=order,
+                user=request.user,
+                payment=payment,
+                fooditem=item.fooditem,
+                quantity=item.quantity,
+                price=item.fooditem.price,
+                amount=item.fooditem.price * item.quantity,
+                status="pending",
+            )
+
+            to_emails.add(vendor.user.email)
+
+            item.delete()
+
+    # Customer Email
+    mail_subject = "Thanks for ordering with us"
+
+    mail_template = "order/order_confirmation_email.html"
+
+    context = {
+        "user_first_name": order.first_name,
+        "order_id": order.order_number,
+        "order_transaction_id": payment.transaction_id,
+        "to_email": order.email,
+    }
+
+    send_notification.delay(mail_subject, mail_template, context)
+
+    # Vendor Email
+    mail_subject = "You have received an order"
+
+    mail_template = "order/new_order_received.html"
+
+    context = {"to_email": list(to_emails)}
+
+    send_notification.delay(mail_subject, mail_template, context)
+
+    del request.session["order_id"]
+
+    return redirect(
+        f"/order/order_complete/?order_no={order_number}&trans_id={transaction_id}"
+    )
+
+
 def order_complete(request):
     order_number = request.GET.get("order_no")
     transaction_id = request.GET.get("trans_id")
@@ -261,7 +441,7 @@ def update_order_status(request):
             ordered_food = OrderedFood.objects.get(id=ordered_id)
 
         except OrderedFood.DoesNotExist:
-            return JsonResponse({"success": False, "message": "Invalid asdfasdfitem"})
+            return JsonResponse({"success": False, "message": "Invalid item"})
 
         ordered_food.status = new_status
         if ordered_food.status == "completed":
@@ -276,7 +456,9 @@ def update_order_status(request):
             f"order_{ordered_food.id}",
             {"type": "order_update", "food_id": ordered_food.id, "status": new_status},
         )
-        return JsonResponse({"success": True, "message": "Invalid item"})
+        return JsonResponse(
+            {"success": True, "message": "Order status updated successfully"}
+        )
 
 
 def download_pdf(request, order_number):
@@ -371,15 +553,13 @@ def vendor_order_list(request):
             )
         )
     )
-    
+
     for order in orders:
         total = 0
         for item in order.orders.all():
             total += item.amount
-        order.total1=total 
-    return render(
-        request, "order/vendor_order_list.html", {"orders": orders}
-    )
+        order.total1 = total
+    return render(request, "order/vendor_order_list.html", {"orders": orders})
 
 
 @login_required(login_url="accounts:login")
@@ -392,11 +572,12 @@ def vendor_order_detail(request, order_number):
     context = {"ordered_foods": ordered_foods}
     return render(request, "order/vendor_order_detail.html", context)
 
-@login_required(login_url='accounts:login')
+
+@login_required(login_url="accounts:login")
 def earnings_report(request):
     # Get all time periods
-    user=request.user 
-    vendor=Vendor.objects.get(user=user)
+    user = request.user
+    vendor = Vendor.objects.get(user=user)
     context = {
         "today": OrderedFood.todays_earnings(vendor),
         "weekly": OrderedFood.weekly_earnings(vendor),
@@ -410,8 +591,7 @@ def earnings_report(request):
 
 @csrf_exempt
 def server_update_order_status(request):
-    
-    
+
     if request.method == "POST":
         ordered_id = request.POST.get("food_id")
         new_status = request.POST.get("status")
@@ -452,19 +632,19 @@ def refund_detail(request, pk):
     context = {"refunds": refunds}
     return render(request, "order/refund_detail.html", context)
 
-from .models import VendorPayout
-def vendor_payout(request):
-    vendor=Vendor.objects.get(user=request.user)
-    payouts=VendorPayout.objects.filter(vendor=vendor).order_by('-created_at')
-    context={
-        'payouts':payouts
-    }
-    return render(request,'order/vendor_payout.html',context)
 
-def vendor_payout_detail(request,pk):
-    vendor=Vendor.objects.get(user=request.user)
-    payouts=VendorPayout.objects.get(vendor=vendor,pk=pk)
-    context={
-        'payouts':payouts
-    }
-    return render(request,'order/vendor_payout_detail.html',context)
+from .models import VendorPayout
+
+
+def vendor_payout(request):
+    vendor = Vendor.objects.get(user=request.user)
+    payouts = VendorPayout.objects.filter(vendor=vendor).order_by("-created_at")
+    context = {"payouts": payouts}
+    return render(request, "order/vendor_payout.html", context)
+
+
+def vendor_payout_detail(request, pk):
+    vendor = Vendor.objects.get(user=request.user)
+    payouts = VendorPayout.objects.get(vendor=vendor, pk=pk)
+    context = {"payouts": payouts}
+    return render(request, "order/vendor_payout_detail.html", context)
