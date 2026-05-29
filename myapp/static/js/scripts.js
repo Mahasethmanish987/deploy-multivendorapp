@@ -491,7 +491,7 @@
 }(jQuery, document, window));
 
 
-// swiper.min.js
+
 /**
  * Swiper 3.3.1
  * Most modern mobile touch slider and framework with hardware accelerated transitions
@@ -1342,7 +1342,7 @@
         return this })), window.Swiper = t
 }(), "undefined" != typeof module ? module.exports = window.Swiper : "function" == typeof define && define.amd && define([], function() { "use strict";
     return window.Swiper });
-//# sourceMappingURL=maps/swiper.min.js.map
+
 
 
 // bootstrap-datepicker.js

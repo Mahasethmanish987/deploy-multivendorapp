@@ -18,10 +18,12 @@ services:
   gunicorn:
     build: .
     command: >
-      sh -c "python manage.py collectstatic --noinput &&
+      sh -c "python manage.py migrate --noinput && 
              gunicorn mysite.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 2"
     env_file:
       - .env.prod
+    volumes:
+      - .:/app
     restart: unless-stopped
     networks:
       - app_network
