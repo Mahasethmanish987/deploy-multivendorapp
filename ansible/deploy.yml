@@ -3,9 +3,9 @@
   hosts: web_servers
   become: yes
   vars:
-    app_dir: "/home/ubuntu"
-    env_file_path_for_web01: "/home/ubuntu/.env.prod"
-    env_file_path_for_web02: "/home/ubuntu/.env.redis.prod"
+    app_dir: "/opt/multivendor"
+    env_file_path_for_web01: "/opt/multivendor/.env.prod"
+    env_file_path_for_web02: "/opt/multivendor/.env.redis.prod"
 
   tasks:
     - name: Ensure app directory exists
@@ -16,7 +16,7 @@
 
     - name: Copy code from Jenkins workspace to EC2
       synchronize:                     # fixed spelling
-        src: "./"
+        src: "."
         dest: "{{ app_dir }}/"
         rsync_opts:
           - "--exclude=.git/"
