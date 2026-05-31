@@ -16,7 +16,7 @@
 
     - name: Copy code from Jenkins workspace to EC2
       synchronize:                
-        src: "."
+        src: "./mysite/"
         dest: "{{ app_dir }}/"
         rsync_opts:
           - "--exclude=.git/"
