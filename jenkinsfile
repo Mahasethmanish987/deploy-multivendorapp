@@ -29,7 +29,15 @@ pipeline {
                 }
             }
         }
-
+        stage('Test SSH Connection') {
+    steps {
+        withCredentials([sshUserPrivateKey(credentialsId: 'my-ec2-ssh-key', keyFileVariable: 'SSH_KEY_FILE')]) {
+            sh """
+                ssh -i $SSH_KEY_FILE -o StrictHostKeyChecking=no ubuntu@172.31.42.93 "echo OK"
+            """
+        }
+    }
+}
         stage('Deploy to EC2') {
             steps {
                 withCredentials([
