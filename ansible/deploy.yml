@@ -60,14 +60,14 @@
         source: pull
 
     - name: Deploy with Docker Compose on web01
-      docker_compose:
+      community.docker.docker_compose_v2:
         project_src: "{{ app_dir }}"
         files:
           - "{{ compose_files_for_web01 }}"
         state: present
       when: inventory_hostname == "web01"
     - name: Deploy with Docker Compose on web02
-      docker_compose:
+      community.docker.docker_compose_v2:
         project_src: "{{ app_dir }}"
         files:
           - "{{ compose_files_for_web02 }}"
