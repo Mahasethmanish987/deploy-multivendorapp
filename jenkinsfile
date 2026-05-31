@@ -30,7 +30,6 @@ pipeline {
             }
         }
 
-        // 👇 New stage: Deploy to EC2 using Ansible (no Docker on EC2, just copy code)
         stage('Deploy to EC2') {
             steps {
                 withCredentials([
@@ -42,12 +41,19 @@ pipeline {
                         usernameVariable: 'SSH_USER'
                     )
                 ]) {
-                    sh """
-                        ansible-playbook ansible/deploy.yml \
-                        -i ansible/inventory/inventory.yml \
-                        --private-key ${SSH_KEY_FILE} \
-                        --extra-vars "secret_file_path=${SECRET_ENV_FILE} secret_file_path_redis=${SECRET_ENV_FILE_REDIS}"
-                    """
+                    withEnv([
+                        "ANSIBLE_HOST_KEY_CHECKING=False",
+                        "SSH_KEY_FILE=${SSH_KEY_FILE}",
+                        "SECRET_ENV_FILE=${SECRET_ENV_FILE}",
+                        "SECRET_ENV_FILE_REDIS=${SECRET_ENV_FILE_REDIS}"
+                    ]) {
+                        sh '''
+                            ansible-playbook ansible/deploy.yml \
+                            -i ansible/inventory/inventory.yml \
+                            --private-key "$SSH_KEY_FILE" \
+                            --extra-vars "secret_file_path=$SECRET_ENV_FILE secret_file_path_redis=$SECRET_ENV_FILE_REDIS"
+                        '''
+                    }
                 }
             }
         }
@@ -64,7 +70,7 @@ pipeline {
             echo "Pipeline failed!"
         }
         success {
-            echo "Pipeline succeeded!"
+            echo "Pipeline succeeded! Image ${IMAGE_NAME}:${BUILD_NUMBER} deployed."
         }
     }
 }
