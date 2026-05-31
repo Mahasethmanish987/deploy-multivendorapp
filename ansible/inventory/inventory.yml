@@ -3,8 +3,8 @@ all:
     web_servers:
       hosts:
         web01:
-          ansible_host: 172.31.42.93
+          ansible_host: ec2-3-90-152-26.compute-1.amazonaws.com
           ansible_user: ubuntu
         web02:
-          ansible_host: 172.31.35.91
+          ansible_host: ec2-13-220-221-96.compute-1.amazonaws.com
           ansible_user: ubuntu
