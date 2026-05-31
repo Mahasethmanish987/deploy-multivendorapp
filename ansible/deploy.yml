@@ -6,6 +6,11 @@
     app_dir: "/opt/multivendor"
     env_file_path_for_web01: "/opt/multivendor/.env.prod"
     env_file_path_for_web02: "/opt/multivendor/.env.redis.prod"
+    ecr_registry: "822417885273.dkr.ecr.us-east-1.amazonaws.com"
+    ecr_repo: "multivendor"
+    ecr_image_tag: "{{ ecr_image_tag }}"
+    compose_files_for_web01: "docker-compose.prod.yml"
+    compose_files_for_web02: "docker-compose-tier.yml"
 
   tasks:
     - name: Ensure app directory exists
@@ -37,3 +42,35 @@
         dest: "{{ env_file_path_for_web02 }}"
         mode: '0600'
       when: inventory_hostname == "web02"
+
+    - name: Install awscli 
+      apt:
+        name: awscli
+        state: present
+        update_cache: yes
+
+    - name: Log in to Amazon ECR
+      shell: |
+        aws ecr get-login-password --region us-east-1 | \
+        docker login --username AWS --password-stdin {{ ecr_registry }}  
+
+    - name: Pull the Docker image from ECR
+      docker_image:
+        name: "{{ ecr_registry }}/{{ ecr_repo }}:{{ ecr_image_tag }}"
+        source: pull
+
+    - name: Deploy with Docker Compose on web01
+      docker_compose:
+        project_src: "{{ app_dir }}"
+        files:
+          - "{{ compose_files_for_web01 }}"
+        state: present
+      when: inventory_hostname == "web01"
+    - name: Deploy with Docker Compose on web02
+      docker_compose:
+        project_src: "{{ app_dir }}"
+        files:
+          - "{{ compose_files_for_web02 }}"
+        state: present
+      when: inventory_hostname == "web02"                
+

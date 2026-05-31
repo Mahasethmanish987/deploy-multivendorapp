@@ -88,7 +88,7 @@ pipeline {
                             ansible-playbook ansible/deploy.yml \
                             -i ansible/inventory/inventory.yml \
                             --private-key "$SSH_KEY_FILE" \
-                            --extra-vars "secret_file_path=$SECRET_ENV_FILE secret_file_path_redis=$SECRET_ENV_FILE_REDIS"
+                            --extra-vars "secret_file_path=$SECRET_ENV_FILE secret_file_path_redis=$SECRET_ENV_FILE_REDIS ecr_image_tag=${BUILD_NUMBER}"
                         '''
                     }
                 }
