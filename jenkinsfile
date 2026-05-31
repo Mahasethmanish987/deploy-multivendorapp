@@ -36,7 +36,7 @@ pipeline {
                     file(credentialsId: 'evd-prod-file', variable: 'SECRET_ENV_FILE'),
                     file(credentialsId: 'env-redis-prod', variable: 'SECRET_ENV_FILE_REDIS'),
                     sshUserPrivateKey(
-                        credentialsId: 'my-ec2-ssh-key',
+                        credentialsId: 'host-ssh-key',
                         keyFileVariable: 'SSH_KEY_FILE',
                         usernameVariable: 'SSH_USER'
                     )
