@@ -1,5 +1,6 @@
 pipeline {
-    agent any 
+    agent any
+
     environment {
         AWS_ACCOUNT_ID = '822417885273'
         AWS_REGION = 'us-east-1'
@@ -19,7 +20,7 @@ pipeline {
             }
         }
 
-        stage("Push to ECR") {
+        stage('Push to ECR') {
             steps {
                 script {
                     docker.withRegistry(REGISTRY_URL, REGISTRY_CREDENTIALS) {
@@ -29,10 +30,41 @@ pipeline {
             }
         }
 
-        stage("Clean up") {
+        // 👇 New stage: Deploy to EC2 using Ansible (no Docker on EC2, just copy code)
+        stage('Deploy to EC2') {
+            steps {
+                withCredentials([
+                    file(credentialsId: 'evd-prod-file', variable: 'SECRET_ENV_FILE'),
+                    file(credentialsId: 'env-redis-prod', variable: 'SECRET_ENV_FILE_REDIS'),
+                    sshUserPrivateKey(
+                        credentialsId: 'my-ec2-ssh-key',
+                        keyFileVariable: 'SSH_KEY_FILE',
+                        usernameVariable: 'SSH_USER'
+                    )
+                ]) {
+                    sh """
+                        ansible-playbook ansible/deploy.yml \
+                        -i ansible/inventory/inventory.yml \
+                        --private-key ${SSH_KEY_FILE} \
+                        --extra-vars "secret_file_path=${SECRET_ENV_FILE} secret_file_path_redis=${SECRET_ENV_FILE_REDIS}"
+                    """
+                }
+            }
+        }
+
+        stage('Clean up') {
             steps {
                 sh "docker image prune -f || true"
             }
+        }
+    }
+
+    post {
+        failure {
+            echo "Pipeline failed!"
+        }
+        success {
+            echo "Pipeline succeeded!"
         }
     }
 }

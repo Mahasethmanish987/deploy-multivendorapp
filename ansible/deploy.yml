@@ -1,0 +1,39 @@
+---
+- name: Deploy Django app from Jenkins workspace to EC2
+  hosts: web_servers
+  become: yes
+  vars:
+    app_dir: "/home/ubuntu"
+    env_file_path_for_web01: "/home/ubuntu/.env.prod"
+    env_file_path_for_web02: "/home/ubuntu/.env.redis.prod"
+
+  tasks:
+    - name: Ensure app directory exists
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Copy code from Jenkins workspace to EC2
+      synchronize:                     # fixed spelling
+        src: "./"
+        dest: "{{ app_dir }}/"
+        rsync_opts:
+          - "--exclude=.git/"
+          - "--exclude=venv/"
+          - "--exclude=__pycache__/"
+          - "--exclude=*.pyc"
+
+    - name: Copy .env.prod from Jenkins secret to web01
+      copy:
+        src: "{{ secret_file_path }}"
+        dest: "{{ env_file_path_for_web01 }}"
+        mode: '0600'
+      when: inventory_hostname == "web01"
+
+    - name: Copy .env.redis.prod from Jenkins secret to web02
+      copy:
+        src: "{{ secret_file_path_redis }}"
+        dest: "{{ env_file_path_for_web02 }}"
+        mode: '0600'
+      when: inventory_hostname == "web02"

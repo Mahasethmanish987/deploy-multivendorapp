@@ -1,0 +1,10 @@
+all:
+  children:
+    web_servers:
+      hosts:
+        web01:
+          ansible_host: 172.31.42.93
+          ansible_user: ubuntu
+        web02:
+          ansible_host: 172.31.35.91
+          ansible_user: ubuntu
