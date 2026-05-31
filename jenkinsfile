@@ -29,6 +29,11 @@ pipeline {
                 }
             }
         }
+        stage('Debug Playbook') {
+    steps {
+        sh 'cat ansible/deploy.yml'
+    }
+}
         stage('Debug Key Fingerprint') {
     steps {
         withCredentials([sshUserPrivateKey(credentialsId: 'host-ssh-key', keyFileVariable: 'SSH_KEY_FILE')]) {

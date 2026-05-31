@@ -15,7 +15,7 @@
         mode: '0755'
 
     - name: Copy code from Jenkins workspace to EC2
-      synchronize:                     # fixed spelling
+      synchronize:                
         src: "."
         dest: "{{ app_dir }}/"
         rsync_opts:
