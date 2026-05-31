@@ -1,0 +1,38 @@
+pipeline {
+    agent any 
+    environment {
+        AWS_ACCOUNT_ID = '822417885273'
+        AWS_REGION = 'us-east-1'
+        ECR_REPO_NAME = 'multivendor'
+        ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        IMAGE_NAME = "${ECR_REGISTRY}/${ECR_REPO_NAME}"
+        REGISTRY_URL = "https://${ECR_REGISTRY}"
+        REGISTRY_CREDENTIALS = 'ecr:us-east-1:awscreds'
+    }
+
+    stages {
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    dockerImage = docker.build("${IMAGE_NAME}:${BUILD_NUMBER}", ".")
+                }
+            }
+        }
+
+        stage("Push to ECR") {
+            steps {
+                script {
+                    docker.withRegistry(REGISTRY_URL, REGISTRY_CREDENTIALS) {
+                        dockerImage.push()
+                    }
+                }
+            }
+        }
+
+        stage("Clean up") {
+            steps {
+                sh "docker image prune -f || true"
+            }
+        }
+    }
+}
