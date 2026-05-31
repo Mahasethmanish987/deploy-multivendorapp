@@ -29,6 +29,16 @@ pipeline {
                 }
             }
         }
+        stage('Debug Key Fingerprint') {
+    steps {
+        withCredentials([sshUserPrivateKey(credentialsId: 'host-ssh-key', keyFileVariable: 'SSH_KEY_FILE')]) {
+            sh '''
+                echo "Key fingerprint:"
+                ssh-keygen -lf "$SSH_KEY_FILE"
+            '''
+        }
+    }
+}
         stage('Debug Key') {
     steps {
         withCredentials([sshUserPrivateKey(credentialsId: 'host-ssh-key', keyFileVariable: 'SSH_KEY_FILE')]) {
