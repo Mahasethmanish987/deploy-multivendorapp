@@ -22,22 +22,26 @@ pipeline {
 
         stage('Push to ECR') {
             steps {
-s                script {
+                script {
                     docker.withRegistry(REGISTRY_URL, REGISTRY_CREDENTIALS) {
                         dockerImage.push()
                     }
                 }
             }
         }
+
         stage('Test SSH Connection') {
-                  steps {
-        withCredentials([sshUserPrivateKey(credentialsId: 'host-ssh-key', keyFileVariable: 'SSH_KEY_FILE')]) {
-            sh """
-                ssh -i $SSH_KEY_FILE -o StrictHostKeyChecking=no ubuntu@172.31.42.93 "echo OK"
-            """
+            steps {
+                withCredentials([sshUserPrivateKey(credentialsId: 'host-ssh-key', keyFileVariable: 'SSH_KEY_FILE')]) {
+                    withEnv(["SSH_KEY_FILE=${SSH_KEY_FILE}"]) {
+                        sh '''
+                            ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no ubuntu@172.31.42.93 "echo OK"
+                        '''
+                    }
+                }
+            }
         }
-    }
-}
+
         stage('Deploy to EC2') {
             steps {
                 withCredentials([
