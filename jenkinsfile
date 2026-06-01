@@ -18,6 +18,17 @@ pipeline {
                 sh 'find . -name "celery.py"'
             }
         }
+        stages {
+
+    stage('Pre Build Cleanup') {
+        steps {
+            sh '''
+                docker system prune -af || true
+                docker builder prune -af || true
+            '''
+        }
+    }
+
 
         stage('Build Docker Image') {
             steps {
@@ -70,6 +81,15 @@ pipeline {
                 sh "docker image prune -f || true"
             }
         }
+         stage('Post Build Cleanup') {
+        steps {
+            sh """
+                docker rmi ${IMAGE_NAME}:${BUILD_NUMBER} || true
+                docker system prune -af || true
+                docker builder prune -af || true
+            """
+        }
+    }
     }
 
     post {
