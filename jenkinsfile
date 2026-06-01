@@ -10,13 +10,15 @@ pipeline {
         REGISTRY_URL = "https://${ECR_REGISTRY}"
         REGISTRY_CREDENTIALS = 'ecr:us-east-1:awscreds'
     }
-    stage('List build context') {
-    steps {
-        sh 'ls -la'
-        sh 'find . -name "celery.py"'
-    }
-}
+
     stages {
+        stage('List build context') {
+            steps {
+                sh 'ls -la'
+                sh 'find . -name "celery.py"'
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
@@ -34,8 +36,6 @@ pipeline {
                 }
             }
         }
-       
-
 
         stage('Deploy to EC2') {
             steps {
