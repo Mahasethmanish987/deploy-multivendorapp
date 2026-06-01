@@ -1,0 +1,58 @@
+
+
+services:
+  
+
+  redis:
+    image: redis:7
+    container_name: redis
+    volumes:
+      - redis_data:/data
+    ports:
+     - "6379:6379"  
+    restart: always
+
+  celery_worker:
+    image: "{{ ecr_registry }}/{{ ecr_repo }}:{{ ecr_image_tag }}"
+    command: celery -A mysite worker --loglevel=info --concurrency=2
+    volumes:
+      - .:/app
+    env_file:
+      - .env.redis.prod
+    environment:
+      - DJANGO_DEBUG=False  # Should be False in production
+      - GDAL_DATA=/usr/share/gdal
+      - DJANGO_SETTINGS_MODULE=mysite.settings.prod_settings
+      
+    depends_on:
+      - redis
+       
+      
+    restart: unless-stopped
+
+  celery_beat:
+    image: "{{ ecr_registry }}/{{ ecr_repo }}:{{ ecr_image_tag }}"
+    command: celery -A mysite beat --loglevel=info
+    volumes:
+      - beat_data:/var/celery
+    env_file:
+      - .env.redis.prod
+    environment:
+      - DJANGO_DEBUG=False  
+      - GDAL_DATA=/usr/share/gdal
+        - DJANGO_SETTINGS_MODULE=mysite.settings.prod_settings
+      
+      - CELERY_BEAT_SCHEDULE_FILENAME=/var/celery/beat-schedule
+    depends_on:
+      - redis
+     
+    restart: unless-stopped
+
+  
+
+volumes:
+  
+  redis_data:
+  beat_data:
+  
+  

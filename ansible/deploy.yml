@@ -42,6 +42,16 @@
         dest: "{{ env_file_path_for_web02 }}"
         mode: '0600'
       when: inventory_hostname == "web02"
+    
+    - name: Render docker-compose.prod.yml
+      template:
+        src: docker-compose.prod.yml.j2
+        dest: "{{ app_dir }}/docker-compose.prod.yml"
+
+    - name: Render docker-compose-tier.yml
+      template:
+        src: docker-compose-tier.yml.j2
+        dest: "{{ app_dir }}/docker-compose-tier.yml"
 
     - name: Install awscli 
       apt:
