@@ -10,7 +10,12 @@ pipeline {
         REGISTRY_URL = "https://${ECR_REGISTRY}"
         REGISTRY_CREDENTIALS = 'ecr:us-east-1:awscreds'
     }
-
+    stage('List build context') {
+    steps {
+        sh 'ls -la'
+        sh 'find . -name "celery.py"'
+    }
+}
     stages {
         stage('Build Docker Image') {
             steps {
@@ -29,43 +34,8 @@ pipeline {
                 }
             }
         }
-        stage('Debug Playbook') {
-    steps {
-        sh 'cat ansible/deploy.yml'
-    }
-}
-        stage('Debug Key Fingerprint') {
-    steps {
-        withCredentials([sshUserPrivateKey(credentialsId: 'host-ssh-key', keyFileVariable: 'SSH_KEY_FILE')]) {
-            sh '''
-                echo "Key fingerprint:"
-                ssh-keygen -lf "$SSH_KEY_FILE"
-            '''
-        }
-    }
-}
-        stage('Debug Key') {
-    steps {
-        withCredentials([sshUserPrivateKey(credentialsId: 'host-ssh-key', keyFileVariable: 'SSH_KEY_FILE')]) {
-            sh '''
-                echo "Key file path: $SSH_KEY_FILE"
-                file "$SSH_KEY_FILE"
-                head -1 "$SSH_KEY_FILE" | cat -A
-            '''
-        }
-    }
-}
-        stage('Test SSH Connection') {
-            steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'host-ssh-key', keyFileVariable: 'SSH_KEY_FILE')]) {
-                    withEnv(["SSH_KEY_FILE=${SSH_KEY_FILE}"]) {
-                        sh '''
-                            ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no ubuntu@ec2-3-90-152-26.compute-1.amazonaws.com "echo OK"
-                        '''
-                    }
-                }
-            }
-        }
+       
+
 
         stage('Deploy to EC2') {
             steps {
