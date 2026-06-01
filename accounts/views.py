@@ -25,6 +25,7 @@ def userRegister(request):
     if request.method == "POST":
         form = UserForm(request.POST)
         print("")
+        print("")
         if form.is_valid():
             try:
                 with transaction.atomic():
