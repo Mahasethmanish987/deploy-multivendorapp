@@ -19,16 +19,6 @@
         state: directory
         mode: '0755'
 
-    - name: Copy code from Jenkins workspace to EC2
-      synchronize:                
-        src:  "{{ playbook_dir }}/../"
-        dest: "{{ app_dir }}/"
-        rsync_opts:
-          - "--exclude=.git/"
-          - "--exclude=venv/"
-          - "--exclude=__pycache__/"
-          - "--exclude=*.pyc"
-
     - name: Copy .env.prod from Jenkins secret to web01
       copy:
         src: "{{ secret_file_path }}"
