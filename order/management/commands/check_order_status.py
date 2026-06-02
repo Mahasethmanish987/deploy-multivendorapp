@@ -4,7 +4,7 @@ import requests
 from accounts.utils import send_notification
 from django.core.management.base import BaseCommand
 from order.models import OrderedFood
-
+from django.conf import settings
 
 class Command(BaseCommand):
     help = "Check order status and send notification/cancellations"
@@ -19,7 +19,7 @@ class Command(BaseCommand):
         for order in active_orders:
             if order.is_expired():
                 response = requests.post(
-                    "http://web:8000/order/server-update-order-status",
+                    f"http://{settings.private_ip_of_web01}:8000/order/server-update-order-status",
                     data={"food_id": order.id, "status": "cancelled"},
                 )
 

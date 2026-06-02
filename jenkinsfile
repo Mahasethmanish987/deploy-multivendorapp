@@ -12,12 +12,7 @@ pipeline {
     }
 
     stages {
-        stage('List build context') {
-            steps {
-                sh 'ls -la'
-                sh 'find . -name "celery.py"'
-            }
-        }
+
 
         stage('Pre Build Cleanup') {
             steps {
@@ -80,15 +75,7 @@ pipeline {
             }
         }
 
-        stage('Post Build Cleanup') {
-            steps {
-                sh """
-                    docker rmi ${IMAGE_NAME}:${BUILD_NUMBER} || true
-                    docker system prune -af || true
-                    docker builder prune -af || true
-                """
-            }
-        }
+       
     }
 
     post {
