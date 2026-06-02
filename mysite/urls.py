@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path,include
 from django.conf import settings
 from django.conf.urls.static import static
-from marketplace import views as marketplaceviews 
+from marketplace import views as marketplaceviews
 urlpatterns = [
     path('admins1/',include('admins.urls')),
     path('admin/', admin.site.urls),

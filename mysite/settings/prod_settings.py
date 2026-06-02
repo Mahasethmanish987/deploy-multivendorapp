@@ -9,6 +9,7 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 public_ip_of_web01 = os.environ.get("WEB01_PUBLIC_IP")
 public_ip_of_web02 = os.environ.get("WEB02_PUBLIC_IP")
 private_ip_of_web01 = os.environ.get("WEB01_PRIVATE_IP")
+print(private_ip_of_web01,'these are ips')
 private_ip_of_web02 = os.environ.get("WEB02_PRIVATE_IP")
 ALLOWED_HOSTS = [private_ip_of_web01, public_ip_of_web01, private_ip_of_web02, public_ip_of_web02, "localhost", "127.0.0.1"]
 
