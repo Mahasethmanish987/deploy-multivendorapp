@@ -17,12 +17,12 @@ class Command(BaseCommand):
         active_orders = OrderedFood.objects.exclude(
             status__in=["completed", "cancelled"]
         )
-        print(f"private ip of web01: {settings.private_ip_of_web01}")
+        print(f"private ip of web01: {settings.PRIVATE_IP_OF_WEB01}")
 
         for order in active_orders:
             if order.is_expired():
                 response = requests.post(
-                    f"http://{settings.private_ip_of_web01}:8000/order/server-update-order-status",
+                    f"http://{settings.PRIVATE_IP_OF_WEB01}:8000/order/server-update-order-status",
                     data={"food_id": order.id, "status": "cancelled"},
                 )
 
