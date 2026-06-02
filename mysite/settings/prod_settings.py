@@ -6,7 +6,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY")
 DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = ["*"]
+public_ip_of_web01 = os.environ.get("WEB01_PUBLIC_IP")
+public_ip_of_web02 = os.environ.get("WEB02_PUBLIC_IP")
+private_ip_of_web01 = os.environ.get("WEB01_PRIVATE_IP")
+private_ip_of_web02 = os.environ.get("WEB02_PRIVATE_IP")
+ALLOWED_HOSTS = [private_ip_of_web01, public_ip_of_web01, private_ip_of_web02, public_ip_of_web02, "localhost", "127.0.0.1"]
 
 INSTALLED_APPS = [
     "daphne",
