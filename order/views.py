@@ -84,20 +84,20 @@ def place_order(request):
             vendor_instances = Vendor.objects.filter(id__in=vendor_opening_ids)
             order.vendors.add(*vendor_instances)
             order.save()
-            context = {
+            context ={          
                 "order": order,
                 "cart_items": cart_items,
                 "grand_total": grand_total,
             }
-
             if order.payment_method == "esewa":
                 request.session["order_id"] = order.order_number
 
-                context = {
-                    "api_url": "http://127.0.0.1:8000/order/esewacredentials/",
+                context.update({
+                    "api_url": request.build_absolute_uri("/order/esewacredentials/"),
+
                     "success_url": settings.ESEWA_SUCCESS_URL,
                     "failure_url": settings.ESEWA_FAILURE_URL,
-                }
+                })
                 return render(request, "order/place_order.html", context)
             else:
                 return render(request, "marketplace/checkout.html", {"form": form})
