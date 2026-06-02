@@ -23,7 +23,7 @@ from .forms import OrderForm
 from .models import CustomerRefund, Order, OrderedFood, Payment
 from .utils import generate_order
 
-
+print("")
 @login_required(login_url="accounts:login")
 def place_order(request):
     cart_items = Cart.objects.filter(user=request.user)

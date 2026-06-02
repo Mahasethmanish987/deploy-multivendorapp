@@ -15,8 +15,6 @@ services:
   celery_worker:
     image: "{{ ecr_registry }}/{{ ecr_repo }}:{{ ecr_image_tag }}"
     command: celery -A mysite worker --loglevel=info --concurrency=2
-    volumes:
-      - .:/app
     env_file:
       - .env.redis.prod
     environment:
