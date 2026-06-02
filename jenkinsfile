@@ -14,14 +14,7 @@ pipeline {
     stages {
 
 
-        stage('Pre Build Cleanup') {
-            steps {
-                sh '''
-                    docker system prune -af || true
-                    docker builder prune -af || true
-                '''
-            }
-        }
+        
 
         stage('Build Docker Image') {
             steps {
@@ -69,11 +62,7 @@ pipeline {
             }
         }
 
-        stage('Clean up') {
-            steps {
-                sh "docker image prune -f || true"
-            }
-        }
+       
 
        
     }
