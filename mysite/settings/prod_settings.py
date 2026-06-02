@@ -6,12 +6,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY")
 DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
-public_ip_of_web01 = os.environ.get("WEB01_PUBLIC_IP")
-public_ip_of_web02 = os.environ.get("WEB02_PUBLIC_IP")
-private_ip_of_web01 = os.environ.get("WEB01_PRIVATE_IP")
-print(private_ip_of_web01,'these are ips')
-private_ip_of_web02 = os.environ.get("WEB02_PRIVATE_IP")
-ALLOWED_HOSTS = [private_ip_of_web01, public_ip_of_web01, private_ip_of_web02, public_ip_of_web02, "localhost", "127.0.0.1"]
+PUBLIC_IP_OF_WEB01 = os.environ.get("WEB01_PUBLIC_IP")
+PUBLIC_IP_OF_WEB02 = os.environ.get("WEB02_PUBLIC_IP")
+PRIVATE_IP_OF_WEB01 = os.environ.get("WEB01_PRIVATE_IP")
+print(PRIVATE_IP_OF_WEB01,'these are ips')
+PRIVATE_IP_OF_WEB02 = os.environ.get("WEB02_PRIVATE_IP")
+ALLOWED_HOSTS = [PRIVATE_IP_OF_WEB01, PUBLIC_IP_OF_WEB01, PRIVATE_IP_OF_WEB02, PUBLIC_IP_OF_WEB02, "localhost", "127.0.0.1"]
 
 INSTALLED_APPS = [
     "daphne",
