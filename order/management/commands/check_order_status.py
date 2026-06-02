@@ -6,6 +6,8 @@ from django.core.management.base import BaseCommand
 from order.models import OrderedFood
 from django.conf import settings
 
+
+print("Checking order status...")
 class Command(BaseCommand):
     help = "Check order status and send notification/cancellations"
 
