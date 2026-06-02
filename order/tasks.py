@@ -19,3 +19,5 @@ def check_order_status_task(self):
     except Exception as e:
         logger.error(f"Retrying check_order_status due to: {e}")
         self.retry(exc=e,countdown=10*60)    
+
+print("")        
