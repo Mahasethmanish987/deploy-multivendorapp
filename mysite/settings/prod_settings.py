@@ -68,7 +68,6 @@ TEMPLATES = [
 ]
 ASGI_APPLICATION = "mysite.asgi.application"
 WSGI_APPLICATION = "mysite.wsgi.application"
-print("")
 DATABASES = {
     "default": {
         "ENGINE": "django.contrib.gis.db.backends.postgis",

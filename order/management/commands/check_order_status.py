@@ -17,7 +17,6 @@ class Command(BaseCommand):
         active_orders = OrderedFood.objects.exclude(
             status__in=["completed", "cancelled"]
         )
-        print(f"private ip of web01: {settings.PRIVATE_IP_OF_WEB01}")
 
         for order in active_orders:
             if order.is_expired():
