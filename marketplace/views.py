@@ -266,7 +266,7 @@ def search(request):
             Q(id__in=fetch_vendor_by_fooditems) | Q(vendor_name__icontains=rest_name)
         )
         print("vendors count before location filter")
-
+        print(lat, lng, radius,'hlw world')
         if lat and lng and radius:
             print("hlw world")
             pnt = GEOSGeometry("POINT(%s %s)" % (lng, lat))
