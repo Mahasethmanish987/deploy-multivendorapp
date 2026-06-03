@@ -9,8 +9,10 @@ services:
       - "80:80"
       - "443:443"
     depends_on:
-      - gunicorn
-      - daphne
+      gunicorn:
+        condition: service_healthy
+      daphne:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - app_network
@@ -25,6 +27,12 @@ services:
     restart: unless-stopped
     networks:
       - app_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]   # or use a dedicated /health/ endpoint
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
   daphne:
     image: "{{ ecr_registry }}/{{ ecr_repo }}:{{ ecr_image_tag }}"
@@ -34,7 +42,12 @@ services:
     restart: unless-stopped
     networks:
       - app_network
-    # depends_on: redis   # optional – remove if Redis is external
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/"]   # Daphne should respond to HTTP GET
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
 networks:
   app_network:
