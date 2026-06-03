@@ -22,7 +22,7 @@ class Command(BaseCommand):
         for order in active_orders:
             if order.is_expired():
                 response = requests.post(
-                    f"http://{settings.PRIVATE_IP_OF_WEB01}:8000/order/server-update-order-status",
+                    f"http://{settings.PRIVATE_IP_OF_WEB01}:80/order/server-update-order-status",
                     data={"food_id": order.id, "status": "cancelled"},
                 )
 
