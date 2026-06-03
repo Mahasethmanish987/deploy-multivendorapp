@@ -42,6 +42,17 @@
       template:
         src: docker-compose-tier.yml.j2
         dest: "{{ app_dir }}/docker-compose-tier.yml"
+    - name: Ensure nginx config directory exists on target
+      file:
+        path: "{{ app_dir }}/nginx"
+        state: directory
+        mode: '0755'
+
+    - name: Copy nginx.conf from Jenkins workspace to target
+      copy:
+        src: /var/lib/jenkins/workspace/multivendor/nginx/nginx.conf
+        dest: "{{ app_dir }}/nginx/nginx.conf"
+        mode: '0644'    
 
     - name: Install awscli 
       apt:
