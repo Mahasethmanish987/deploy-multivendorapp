@@ -286,6 +286,9 @@ def search(request):
 
             for v in vendors:
                 v.kms = round(v.distance.km, 1)
+                
+                print(f"Vendor: {v.vendor_name}, Distance: {v.kms} km")
+            print("these is the after the vendor reuslt")
 
         vendor_count = vendors.count()
         paginator = Paginator(vendors, 1)
