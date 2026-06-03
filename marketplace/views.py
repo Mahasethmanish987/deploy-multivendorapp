@@ -265,6 +265,7 @@ def search(request):
         vendors = Vendor.objects.filter(
             Q(id__in=fetch_vendor_by_fooditems) | Q(vendor_name__icontains=rest_name)
         )
+        print(f"vendors count before location filter: {vendors.count()}")
 
         if lat and lng and radius:
             print("hlw world")
