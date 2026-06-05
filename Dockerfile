@@ -1,40 +1,57 @@
-FROM python:3.10-bookworm
+# ========== BUILDER STAGE ==========
+FROM python:3.10-bookworm AS builder
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    DEBIAN_FRONTEND=noninteractive
-
-# Install system dependencies
+# Install build dependencies (needed to compile pygdal)
 RUN apt-get update && \
     apt-get install -y \
     binutils \
-    gdal-bin \
     libgdal-dev \
-    python3-gdal \
     libgeos-dev \
-    gettext && \
-    rm -rf /var/lib/apt/lists/*
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set GDAL environment variables
+# Set GDAL environment for compilation
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal \
-    C_INCLUDE_PATH=/usr/include/gdal \
-    GDAL_LIBRARY_PATH=/usr/lib/libgdal.so \
-    GEOS_LIBRARY_PATH=/usr/lib/libgeos_c.so
+    C_INCLUDE_PATH=/usr/include/gdal
 
-# Install Python dependencies
 WORKDIR /app
 
-# Upgrade pip
+# Upgrade pip and create a virtual environment
 RUN pip install --upgrade pip
+ENV VIRTUAL_ENV=/opt/venv
+RUN python -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+# Install Python dependencies (including pygdal)
 COPY requirements.txt .
 RUN sed -i '/^gdal==/d' requirements.txt && \
     pip install -r requirements.txt
-
 RUN pip install --no-deps pygdal==3.6.2.*
 
-# Copy application code
+# ========== FINAL STAGE ==========
+FROM python:3.10-bookworm AS final
+
+# Install only runtime libraries (no -dev packages)
+RUN apt-get update && \
+    apt-get install -y \
+    gdal-bin \
+    libgdal30 \        # runtime shared library for GDAL 3.6.2
+    libgeos-c1v5 \     # runtime shared library for GEOS
+    gettext \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set GDAL environment for runtime (point to the shared libs)
+ENV GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/libgdal.so \
+    GEOS_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/libgeos_c.so \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+# Copy the entire virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+WORKDIR /app
 COPY . .
 
-# Set default command
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
