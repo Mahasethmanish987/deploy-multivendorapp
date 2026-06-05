@@ -156,4 +156,4 @@ STORAGES = {
         "BACKEND": "mysite.storage.NonStrictManifestStaticFilesStorage",
     },
 }
-print("")
+

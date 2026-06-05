@@ -3,8 +3,8 @@ all:
     web_servers:
       hosts:
         web01:
-          ansible_host:  54.210.71.179
+          ansible_host:  100.57.146.169
           ansible_user: ubuntu
         web02:
-          ansible_host: 13.221.43.214
+          ansible_host: 100.55.118.125
           ansible_user: ubuntu
