@@ -64,12 +64,7 @@
       shell: |
         aws ecr get-login-password --region us-east-1 | \
         docker login --username AWS --password-stdin {{ ecr_registry }}  
-    - name: Remove all the images 
-      shell: |
-        docker rmi $(docker images -q) || true
-    - name: Remove all the containers 
-      shell: |
-        docker rm $(docker ps -a -q) || true    
+  
     - name: Pull the Docker image from ECR
       docker_image:
         name: "{{ ecr_registry }}/{{ ecr_repo }}:{{ ecr_image_tag }}"
