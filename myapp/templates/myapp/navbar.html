@@ -61,6 +61,7 @@
         x.value=current_location
     }
     function getLocation(){
+        console.log("getting location")
         if(navigator.geolocation)
     {
         navigator.geolocation.getCurrentPosition(showPosition)
