@@ -142,4 +142,4 @@ CELERY_ENABLE_UTC = True
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 ESEWA_SUCCESS_URL = os.environ.get("SUCCESS_URL")
 ESEWA_FAILURE_URL = os.environ.get("FAILURE_URL")
-print("hello world")
+
