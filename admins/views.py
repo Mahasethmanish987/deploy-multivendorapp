@@ -20,7 +20,7 @@ def admin_check(user):
 
 @user_passes_test(admin_check)
 def adminDashboard(request):
-    print("admin dashboard view called")
+    
     pending_payouts = VendorPayout.objects.filter(status="pending").count()
     pending_refunds = CustomerRefund.objects.filter(status="pending").count()
 
@@ -107,7 +107,6 @@ def failure_handle_esewa(request):
 
 def payout_list(request):
     payouts = VendorPayout.objects.filter(status__in=["pending", "cancelled"])
-    print(payouts)
     context = {"payouts": payouts}
     return render(request, "admin/vendor_list.html", context)
 
